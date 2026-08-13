@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 // Pastikan card.glb dan lanyard.png ada di folder yang sama dengan file ini
 import cardGLB from './card.glb';
-import lanyard from './lanyard.png';
+import lanyard from './lanyard.svg';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
