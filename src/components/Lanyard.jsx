@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, extend, useFrame } from '@react-three/fiber';
-import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
+import { useTexture, Environment, Lightformer } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-import cardGLB from './card.glb';
 import lanyard from './lanyard.svg';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
 const BLANK_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-const FRONT_UV_RECT = { x: 0, y: 0, w: 0.5, h: 0.755 };
-const BACK_UV_RECT = { x: 0.5, y: 0, w: 0.5, h: 0.757 };
 
 export default function Lanyard({
   position = [0, 0, 20],
@@ -21,7 +18,6 @@ export default function Lanyard({
   transparent = true,
   frontImage = null,
   backImage = null,
-  imageFit = 'cover',
   lanyardWidth = 1.2
 }) {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
@@ -46,7 +42,6 @@ export default function Lanyard({
             isMobile={isMobile}
             frontImage={frontImage}
             backImage={backImage}
-            imageFit={imageFit}
             lanyardWidth={lanyardWidth}
           />
         </Physics>
@@ -61,69 +56,40 @@ export default function Lanyard({
   );
 }
 
-function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = null, backImage = null, imageFit = 'cover', lanyardWidth = 1.2 }) {
+function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = null, backImage = null, lanyardWidth = 1.2 }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
   
-  const { nodes, materials } = useGLTF(cardGLB);
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
 
-  const cardMap = useMemo(() => {
-    // PROTEKSI ERROR: Menggunakan optional chaining (?.) agar tidak crash
-    const baseMap = materials?.base?.map || null;
-
-    if (!frontImage && !backImage) return baseMap;
-
-    // Menentukan ukuran kanvas dengan aman
-    const W = baseMap?.image ? baseMap.image.width : 512;
-    const H = baseMap?.image ? baseMap.image.height : 512;
-
+  const createCoverTexture = (baseTex) => {
+    if (!baseTex || !baseTex.image) return baseTex;
     const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = 512;
+    canvas.height = 720;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return baseMap;
+    
+    ctx.fillStyle = '#020617'; 
+    ctx.fillRect(0, 0, 512, 720);
+    
+    const img = baseTex.image;
+    const scale = Math.max(512 / img.width, 720 / img.height);
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    const dx = (512 - dw) / 2;
+    const dy = (720 - dh) / 2;
+    
+    ctx.drawImage(img, dx, dy, dw, dh);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  };
 
-    if (baseMap?.image) {
-      ctx.drawImage(baseMap.image, 0, 0, W, H);
-    } else {
-      // Warna dasar hijau jika GLB tidak punya base map
-      ctx.fillStyle = '#10b981'; 
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    const drawFitted = (img, rect) => {
-      const rx = rect.x * W;
-      const ry = rect.y * H;
-      const rw = rect.w * W;
-      const rh = rect.h * H;
-      const pick = imageFit === 'contain' ? Math.min : Math.max;
-      const scale = pick(rw / img.width, rh / img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      const dx = rx + (rw - dw) / 2;
-      const dy = ry + (rh - dh) / 2;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(rx, ry, rw, rh);
-      ctx.clip();
-      ctx.drawImage(img, dx, dy, dw, dh);
-      ctx.restore();
-    };
-
-    if (frontImage && frontTex.image) drawFitted(frontTex.image, FRONT_UV_RECT);
-    if (backImage && backTex.image) drawFitted(backTex.image, BACK_UV_RECT);
-
-    const composite = new THREE.CanvasTexture(canvas);
-    composite.colorSpace = THREE.SRGBColorSpace;
-    composite.flipY = baseMap ? baseMap.flipY : true;
-    composite.anisotropy = 16;
-    composite.needsUpdate = true;
-    return composite;
-  }, [frontImage, backImage, imageFit, frontTex, backTex, materials]);
+  const frontMap = useMemo(() => createCoverTexture(frontTex), [frontTex]);
+  const backMap = useMemo(() => createCoverTexture(backTex), [backTex]);
 
   const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
   const [dragged, drag] = useState(false);
@@ -132,7 +98,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.4, 0]]);
 
   useEffect(() => {
     if (hovered) {
@@ -169,12 +135,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   curve.curveType = 'chordal';
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-  // PROTEKSI ERROR: Mencari geometry secara aman (fallback)
-  const cardGeo = nodes?.card?.geometry || Object.values(nodes).find(n => n.type === 'Mesh' || n.type === 'Group')?.geometry;
-  const clipGeo = nodes?.clip?.geometry || null;
-  const clampGeo = nodes?.clamp?.geometry || null;
-  const metalMat = materials?.metal || Object.values(materials)[0] || null;
-
   return (
     <group position={[0, 4, 0]}>
       <RigidBody ref={fixed} {...segmentProps} type="fixed" />
@@ -182,11 +142,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
       <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       
+      {/* KARTU ID 3D PROCUDURAL */}
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        <CuboidCollider args={[0.8, 1.125, 0.01]} />
+        <CuboidCollider args={[0.8, 1.125, 0.02]} />
         <group
-          scale={2.25}
-          position={[0, -1.2, -0.05]}
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -195,18 +154,25 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* Render aman: Hanya muncul jika file GLB memiliki geometry tersebut */}
-          {cardGeo && (
-            <mesh geometry={cardGeo}>
-              <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />
-            </mesh>
-          )}
-          {clipGeo && metalMat && (
-            <mesh geometry={clipGeo} material={metalMat} material-roughness={0.3} />
-          )}
-          {clampGeo && metalMat && (
-            <mesh geometry={clampGeo} material={metalMat} />
-          )}
+          <mesh>
+            <boxGeometry args={[1.6, 2.25, 0.04]} />
+            <meshStandardMaterial attach="material-0" color="#10b981" />
+            <meshStandardMaterial attach="material-1" color="#10b981" />
+            <meshStandardMaterial attach="material-2" color="#10b981" />
+            <meshStandardMaterial attach="material-3" color="#10b981" />
+            <meshPhysicalMaterial attach="material-4" map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
+            <meshPhysicalMaterial attach="material-5" map={backMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
+          </mesh>
+
+          {/* Plat Besi & Cincin Pengait */}
+          <mesh position={[0, 1.125, 0]}>
+            <boxGeometry args={[0.5, 0.15, 0.06]} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 1.25, 0]}>
+            <torusGeometry args={[0.08, 0.025, 16, 32]} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+          </mesh>
         </group>
       </RigidBody>
 
