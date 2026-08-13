@@ -5,7 +5,6 @@ import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphe
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-// Memanggil file GLB dan Lanyard SVG Anda
 import cardGLB from './card.glb';
 import lanyard from './lanyard.svg';
 
@@ -67,13 +66,11 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
   
-  // Memuat node dan material dari file card.glb
-  const { nodes, materials } = useGLTF(cardGLB);[cite: 2]
+  const { nodes, materials } = useGLTF(cardGLB);
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
 
-  // Menggambar ulang tekstur foto Anda ke UV mapping asli dari card.glb
   const cardMap = useMemo(() => {
     const baseMap = materials.base.map;
     if (!frontImage && !backImage) return baseMap;
@@ -125,7 +122,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);[cite: 2]
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);
 
   useEffect(() => {
     if (hovered) {
@@ -172,8 +169,8 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
         <CuboidCollider args={[0.8, 1.125, 0.01]} />
         <group
-          scale={2.25}[cite: 2]
-          position={[0, -1.2, -0.05]}[cite: 2]
+          scale={2.25}
+          position={[0, -1.2, -0.05]}
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -182,12 +179,11 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* Merender model asli dari card.glb */}
-          <mesh geometry={nodes.card.geometry}>[cite: 2]
-            <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />[cite: 2]
+          <mesh geometry={nodes.card.geometry}>
+            <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />
           </mesh>
-          <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />[cite: 2]
-          <mesh geometry={nodes.clamp.geometry} material={materials.metal} />[cite: 2]
+          <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
+          <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
         </group>
       </RigidBody>
 
