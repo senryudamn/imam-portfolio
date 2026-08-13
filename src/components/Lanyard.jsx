@@ -5,7 +5,7 @@ import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphe
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-// Pastikan card.glb dan lanyard.png ada di folder yang sama dengan file ini
+// Memanggil file GLB dan Lanyard SVG Anda
 import cardGLB from './card.glb';
 import lanyard from './lanyard.svg';
 
@@ -23,8 +23,7 @@ export default function Lanyard({
   frontImage = null,
   backImage = null,
   imageFit = 'cover',
-  lanyardImage = null,
-  lanyardWidth = 1
+  lanyardWidth = 1.2
 }) {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
@@ -49,7 +48,6 @@ export default function Lanyard({
             frontImage={frontImage}
             backImage={backImage}
             imageFit={imageFit}
-            lanyardImage={lanyardImage}
             lanyardWidth={lanyardWidth}
           />
         </Physics>
@@ -64,15 +62,18 @@ export default function Lanyard({
   );
 }
 
-function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = null, backImage = null, imageFit = 'cover', lanyardImage = null, lanyardWidth = 1 }) {
+function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = null, backImage = null, imageFit = 'cover', lanyardWidth = 1.2 }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
-  const { nodes, materials } = useGLTF(cardGLB);
-  const texture = useTexture(lanyardImage || lanyard);
+  
+  // Memuat node dan material dari file card.glb
+  const { nodes, materials } = useGLTF(cardGLB);[cite: 2]
+  const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
 
+  // Menggambar ulang tekstur foto Anda ke UV mapping asli dari card.glb
   const cardMap = useMemo(() => {
     const baseMap = materials.base.map;
     if (!frontImage && !backImage) return baseMap;
@@ -124,7 +125,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);[cite: 2]
 
   useEffect(() => {
     if (hovered) {
@@ -167,11 +168,12 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
       <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
+      
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
         <CuboidCollider args={[0.8, 1.125, 0.01]} />
         <group
-          scale={2.25}
-          position={[0, -1.2, -0.05]}
+          scale={2.25}[cite: 2]
+          position={[0, -1.2, -0.05]}[cite: 2]
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -180,13 +182,15 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          <mesh geometry={nodes.card.geometry}>
-            <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />
+          {/* Merender model asli dari card.glb */}
+          <mesh geometry={nodes.card.geometry}>[cite: 2]
+            <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />[cite: 2]
           </mesh>
-          <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
-          <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
+          <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />[cite: 2]
+          <mesh geometry={nodes.clamp.geometry} material={materials.metal} />[cite: 2]
         </group>
       </RigidBody>
+
       <mesh ref={band}>
         <meshLineGeometry />
         <meshLineMaterial color="white" depthTest={false} resolution={isMobile ? [1000, 2000] : [1000, 1000]} useMap map={texture} repeat={[-4, 1]} lineWidth={lanyardWidth} />
