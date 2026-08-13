@@ -72,18 +72,28 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   const backTex = useTexture(backImage || BLANK_PIXEL);
 
   const cardMap = useMemo(() => {
-    const baseMap = materials.base.map;
+    // PROTEKSI ERROR: Menggunakan optional chaining (?.) agar tidak crash
+    const baseMap = materials?.base?.map || null;
+
     if (!frontImage && !backImage) return baseMap;
 
-    const baseImg = baseMap.image;
-    const W = baseImg.width;
-    const H = baseImg.height;
+    // Menentukan ukuran kanvas dengan aman
+    const W = baseMap?.image ? baseMap.image.width : 512;
+    const H = baseMap?.image ? baseMap.image.height : 512;
+
     const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d');
     if (!ctx) return baseMap;
-    ctx.drawImage(baseImg, 0, 0, W, H);
+
+    if (baseMap?.image) {
+      ctx.drawImage(baseMap.image, 0, 0, W, H);
+    } else {
+      // Warna dasar hijau jika GLB tidak punya base map
+      ctx.fillStyle = '#10b981'; 
+      ctx.fillRect(0, 0, W, H);
+    }
 
     const drawFitted = (img, rect) => {
       const rx = rect.x * W;
@@ -109,11 +119,11 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
 
     const composite = new THREE.CanvasTexture(canvas);
     composite.colorSpace = THREE.SRGBColorSpace;
-    composite.flipY = baseMap.flipY;
+    composite.flipY = baseMap ? baseMap.flipY : true;
     composite.anisotropy = 16;
     composite.needsUpdate = true;
     return composite;
-  }, [frontImage, backImage, imageFit, frontTex, backTex, materials.base.map]);
+  }, [frontImage, backImage, imageFit, frontTex, backTex, materials]);
 
   const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
   const [dragged, drag] = useState(false);
@@ -159,6 +169,12 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   curve.curveType = 'chordal';
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
+  // PROTEKSI ERROR: Mencari geometry secara aman (fallback)
+  const cardGeo = nodes?.card?.geometry || Object.values(nodes).find(n => n.type === 'Mesh' || n.type === 'Group')?.geometry;
+  const clipGeo = nodes?.clip?.geometry || null;
+  const clampGeo = nodes?.clamp?.geometry || null;
+  const metalMat = materials?.metal || Object.values(materials)[0] || null;
+
   return (
     <group position={[0, 4, 0]}>
       <RigidBody ref={fixed} {...segmentProps} type="fixed" />
@@ -179,11 +195,18 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          <mesh geometry={nodes.card.geometry}>
-            <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />
-          </mesh>
-          <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
-          <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
+          {/* Render aman: Hanya muncul jika file GLB memiliki geometry tersebut */}
+          {cardGeo && (
+            <mesh geometry={cardGeo}>
+              <meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={0.15} roughness={0.9} metalness={0.8} />
+            </mesh>
+          )}
+          {clipGeo && metalMat && (
+            <mesh geometry={clipGeo} material={metalMat} material-roughness={0.3} />
+          )}
+          {clampGeo && metalMat && (
+            <mesh geometry={clampGeo} material={metalMat} />
+          )}
         </group>
       </RigidBody>
 
