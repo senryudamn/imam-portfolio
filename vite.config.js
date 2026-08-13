@@ -3,5 +3,6 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  assetsInclude: ['**/*.glb'], // Wajib ditambahkan untuk model 3D
   base: './', 
 })

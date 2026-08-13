@@ -1,297 +1,165 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getProfile, saveProfile, getProjects, saveProjects, getAchievements, saveAchievements, getGallery, saveGallery } from '../data';
-import { Trash2, Plus, LogOut, ArrowLeft, Lock, User, Briefcase, Trophy, Image as ImageIcon, Save, UploadCloud, Loader2 } from 'lucide-react';
+import { Terminal, Lock } from 'lucide-react';
+import { getProfile, getProjects, getAchievements, getGallery } from '../data';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
-import { auth, googleProvider } from '../firebase';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+// IMPORT KOMPONEN LANYARD 3D BARU KITA
+import Lanyard from '../components/Lanyard';
 
-export default function AdminPanel() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-  const ADMIN_EMAIL = "akbariimam8@gmail.com";
-
-  // States Data
-  const [profile, setProfileState] = useState({});
+export default function MainPortfolio() {
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState({});
   const [projects, setProjects] = useState([]);
-  const [newProject, setNewProject] = useState({ title: '', desc: '', category: '', tech: '', image: '' });
   const [achievements, setAchievements] = useState([]);
-  const [newAch, setNewAch] = useState({ title: '', year: '', desc: '' });
   const [gallery, setGallery] = useState([]);
-  const [newPhoto, setNewPhoto] = useState({ url: '', caption: '' });
-
-  // Upload States (Untuk animasi loading saat upload foto)
-  const [isUploading, setIsUploading] = useState({ profile: false, project: false, gallery: false });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (user.email === ADMIN_EMAIL) {
-          setIsAuthenticated(true);
-          loadAllData();
-        } else {
-          signOut(auth);
-          toast.error("Akses Ditolak: Email tidak dikenali.");
-          setIsAuthenticated(false);
-        }
-      } else {
-        setIsAuthenticated(false);
-      }
-      setLoadingAuth(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const loadAllData = () => {
-    setProfileState(getProfile());
+    setProfile(getProfile());
     setProjects(getProjects());
     setAchievements(getAchievements());
     setGallery(getGallery());
-  };
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user.email === ADMIN_EMAIL) {
-        toast.success(`Selamat datang, Admin!`);
-      } else {
-        await signOut(auth);
-        toast.error("Akses Ditolak.");
-      }
-    } catch (error) {
-      toast.error("Gagal login dengan Google.");
-    }
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    toast.success('Berhasil Logout');
-  };
-
-  // --- FUNGSI UPLOAD CLOUDINARY ---
-  const uploadImageToCloudinary = async (file) => {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-    
-    if (!cloudName || !uploadPreset) {
-      toast.error("Konfigurasi Cloudinary belum diatur di .env");
-      return null;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", uploadPreset);
-
-    try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      return data.secure_url;
-    } catch (error) {
-      toast.error("Gagal mengunggah gambar!");
-      return null;
-    }
-  };
-
-  const handleFileUpload = async (e, type) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setIsUploading(prev => ({ ...prev, [type]: true }));
-    const imageUrl = await uploadImageToCloudinary(file);
-    
-    if (imageUrl) {
-      if (type === 'profile') setProfileState({ ...profile, avatar: imageUrl });
-      if (type === 'project') setNewProject({ ...newProject, image: imageUrl });
-      if (type === 'gallery') setNewPhoto({ ...newPhoto, url: imageUrl });
-      toast.success("Gambar berhasil diunggah!");
-    }
-    setIsUploading(prev => ({ ...prev, [type]: false }));
-  };
-
-  // --- Handlers CRUD ---
-  const handleSaveProfile = (e) => { e.preventDefault(); saveProfile(profile); toast.success('Profil Diperbarui!'); };
-
-  const handleAddProject = (e) => {
-    e.preventDefault();
-    const updated = [...projects, { ...newProject, id: Date.now() }];
-    setProjects(updated); saveProjects(updated);
-    setNewProject({ title: '', desc: '', category: '', tech: '', image: '' }); toast.success('Proyek Ditambahkan!');
-  };
-  const handleDeleteProject = (id) => {
-    const updated = projects.filter(p => p.id !== id);
-    setProjects(updated); saveProjects(updated); toast.success('Proyek Dihapus');
-  };
-
-  const handleAddAchievement = (e) => {
-    e.preventDefault();
-    const updated = [...achievements, { ...newAch, id: Date.now() }];
-    setAchievements(updated); saveAchievements(updated);
-    setNewAch({ title: '', year: '', desc: '' }); toast.success('Prestasi Ditambahkan!');
-  };
-  const handleDeleteAchievement = (id) => {
-    const updated = achievements.filter(a => a.id !== id);
-    setAchievements(updated); saveAchievements(updated); toast.success('Prestasi Dihapus');
-  };
-
-  const handleAddPhoto = (e) => {
-    e.preventDefault();
-    const updated = [...gallery, { ...newPhoto, id: Date.now() }];
-    setGallery(updated); saveGallery(updated);
-    setNewPhoto({ url: '', caption: '' }); toast.success('Foto Ditambahkan!');
-  };
-  const handleDeletePhoto = (id) => {
-    const updated = gallery.filter(g => g.id !== id);
-    setGallery(updated); saveGallery(updated); toast.success('Foto Dihapus');
-  };
-
-  const InputStyle = "w-full bg-black/50 border border-gray-700 p-2.5 rounded text-sm focus:border-primary-green focus:outline-none";
-
-  if (loadingAuth) return <div className="min-h-screen flex items-center justify-center bg-bg-dark text-primary-green font-mono">Memeriksa Sesi...</div>;
-
-  if (!isAuthenticated) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-bg-dark">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-panel p-8 rounded-2xl w-full max-w-md relative text-center">
-          <Link to="/" className="absolute -top-12 left-0 text-text-muted hover:text-primary-green flex items-center gap-2 transition"><ArrowLeft size={16} /> Kembali</Link>
-          <div className="mb-8"><Lock size={40} className="mx-auto text-primary-green mb-4" /><h2 className="text-2xl font-bold">Admin Terkunci</h2></div>
-          <button onClick={handleGoogleLogin} className="w-full bg-white text-black font-bold py-3 px-4 rounded transition flex items-center justify-center gap-3 hover:bg-gray-200">
-             Sign in with Google
-          </button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-dark">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
+          <Terminal size={48} className="text-primary-green mb-4" />
         </motion.div>
+        <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} className="font-mono text-primary-green">
+          SYSTEM ONLINE... LOADING UI
+        </motion.p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark p-6 sm:p-12 font-sans">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 pb-6 border-b border-primary-green/20">
-          <div><h1 className="text-3xl font-bold text-primary-green">Admin Dashboard</h1></div>
-          <div className="flex gap-4">
-            <Link to="/" className="px-4 py-2 glass-panel rounded hover:bg-white/5 transition text-sm">Lihat Website</Link>
-            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-900/40 text-red-400 hover:text-white rounded transition text-sm"><LogOut size={16}/> Logout</button>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="min-h-screen">
+      {/* Navbar Minimalis */}
+      <nav className="fixed top-0 w-full glass-panel z-50 py-4 px-6 md:px-12 flex justify-between items-center">
+        <div className="font-mono text-primary-green font-bold text-xl tracking-wider">IMAM.dev</div>
+        <div className="hidden md:flex gap-6 text-sm font-semibold items-center">
+          <a href="#about" className="hover:text-primary-green transition">About</a>
+          <a href="#projects" className="hover:text-primary-green transition">Portfolio</a>
+          <a href="#achievements" className="hover:text-primary-green transition">Prestasi</a>
+          <a href="#gallery" className="hover:text-primary-green transition">Galeri</a>
+          <Link to="/admin" className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30">
+            <Lock size={14}/> Admin Mode
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section id="about" className="pt-32 pb-20 px-6 sm:px-12 max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+        <div className="flex-1 space-y-6 z-20">
+          <h1 className="text-5xl md:text-7xl font-bold leading-tight">{profile.name}</h1>
+          <h2 className="text-2xl font-mono text-primary-green">{profile.role}</h2>
+          <p className="text-lg text-text-muted leading-relaxed max-w-xl">{profile.bio}</p>
+
+          {/* Social Icons */}
+          <div className="flex gap-4 pt-4">
+            {profile.linkedin && (
+              <a href={profile.linkedin} target="_blank" rel="noreferrer" className="p-3 glass-panel rounded-full hover:bg-primary-green hover:text-white transition">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+              </a>
+            )}
+            {profile.instagram && (
+              <a href={profile.instagram} target="_blank" rel="noreferrer" className="p-3 glass-panel rounded-full hover:bg-primary-green hover:text-white transition">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </a>
+            )}
+            {profile.github && (
+              <a href={profile.github} target="_blank" rel="noreferrer" className="p-3 glass-panel rounded-full hover:bg-primary-green hover:text-white transition">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              </a>
+            )}
+            {profile.email && (
+              <a href={`mailto:${profile.email}`} className="p-3 glass-panel rounded-full hover:bg-primary-green hover:text-white transition">
+                <svg className="w-5 h-5 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </a>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* KOLOM KIRI */}
-          <div className="space-y-10">
-            {/* 1. PROFIL */}
-            <div className="glass-panel p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-primary-green"><User size={20}/> Edit Profil & Sosmed</h2>
-              <form onSubmit={handleSaveProfile} className="space-y-3">
-                <input type="text" placeholder="Nama Lengkap" value={profile.name || ''} onChange={e => setProfileState({...profile, name: e.target.value})} className={InputStyle}/>
-                <textarea rows="3" placeholder="Bio Singkat" value={profile.bio || ''} onChange={e => setProfileState({...profile, bio: e.target.value})} className={InputStyle}></textarea>
-                
-                {/* Upload Foto Profil */}
-                <div className="flex gap-2">
-                  <input type="text" placeholder="URL Foto Profil" value={profile.avatar || ''} onChange={e => setProfileState({...profile, avatar: e.target.value})} className={InputStyle}/>
-                  <label className="bg-primary-green/20 hover:bg-primary-green/40 text-primary-green border border-primary-green/50 p-2.5 rounded cursor-pointer flex items-center justify-center min-w-[48px]">
-                    {isUploading.profile ? <Loader2 size={18} className="animate-spin"/> : <UploadCloud size={18}/>}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'profile')} disabled={isUploading.profile}/>
-                  </label>
-                </div>
-                
-                <input type="text" placeholder="Link LinkedIn" value={profile.linkedin || ''} onChange={e => setProfileState({...profile, linkedin: e.target.value})} className={InputStyle}/>
-                <button type="submit" className="w-full bg-primary-green text-bg-dark font-bold py-2.5 rounded transition flex justify-center gap-2 mt-4 hover:bg-emerald-400"><Save size={18}/> Simpan Profil</button>
-              </form>
-            </div>
-
-            {/* 2. PRESTASI */}
-            <div className="glass-panel p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-primary-green"><Trophy size={20}/> Kelola Prestasi</h2>
-              <form onSubmit={handleAddAchievement} className="flex gap-2 mb-6">
-                <div className="flex-1 space-y-2">
-                  <div className="flex gap-2">
-                    <input required type="text" placeholder="Tahun" value={newAch.year} onChange={e=>setNewAch({...newAch, year: e.target.value})} className={`w-1/3 ${InputStyle}`}/>
-                    <input required type="text" placeholder="Judul Prestasi" value={newAch.title} onChange={e=>setNewAch({...newAch, title: e.target.value})} className={`w-2/3 ${InputStyle}`}/>
-                  </div>
-                  <input required type="text" placeholder="Deskripsi Singkat" value={newAch.desc} onChange={e=>setNewAch({...newAch, desc: e.target.value})} className={InputStyle}/>
-                </div>
-                <button type="submit" className="bg-primary-green text-bg-dark p-3 rounded hover:bg-emerald-400 h-fit mt-auto"><Plus size={24}/></button>
-              </form>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {achievements.map(ach => (
-                  <div key={ach.id} className="bg-black/40 p-3 rounded border border-gray-800 flex justify-between gap-3">
-                    <div><p className="font-bold text-sm text-primary-green">{ach.year} - <span className="text-white">{ach.title}</span></p></div>
-                    <button onClick={()=>handleDeleteAchievement(ach.id)} className="text-red-500 hover:text-red-300"><Trash2 size={16}/></button>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* LANYARD 3D / ID CARD HACKER */}
+        <div className="flex-1 w-full flex flex-col items-center gap-6 relative">
+          <div className="w-full h-[450px] sm:h-[550px] relative shrink-0">
+             {/* Menggunakan foto avatar (yang diunggah dari Admin) sebagai gambar kartu depan dan belakang */}
+             <Lanyard 
+               position={[0, 0, 20]} 
+               gravity={[0, -40, 0]} 
+               frontImage={profile.avatar} 
+               backImage={profile.avatar} 
+             />
           </div>
-
-          {/* KOLOM KANAN */}
-          <div className="space-y-10">
-            {/* 3. PROYEK */}
-            <div className="glass-panel p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-primary-green"><Briefcase size={20}/> Kelola Proyek</h2>
-              <form onSubmit={handleAddProject} className="space-y-2 mb-6">
-                <input required type="text" placeholder="Judul Proyek" value={newProject.title} onChange={e=>setNewProject({...newProject, title: e.target.value})} className={InputStyle}/>
-                <div className="flex gap-2">
-                  <input required type="text" placeholder="Kategori" value={newProject.category} onChange={e=>setNewProject({...newProject, category: e.target.value})} className={`w-1/2 ${InputStyle}`}/>
-                  <input required type="text" placeholder="Tech Stack" value={newProject.tech} onChange={e=>setNewProject({...newProject, tech: e.target.value})} className={`w-1/2 ${InputStyle}`}/>
-                </div>
-                
-                {/* Upload Gambar Proyek */}
-                <div className="flex gap-2">
-                  <input required type="text" placeholder="URL Gambar" value={newProject.image} onChange={e=>setNewProject({...newProject, image: e.target.value})} className={InputStyle}/>
-                  <label className="bg-primary-green/20 hover:bg-primary-green/40 text-primary-green border border-primary-green/50 p-2.5 rounded cursor-pointer flex items-center justify-center min-w-[48px]">
-                    {isUploading.project ? <Loader2 size={18} className="animate-spin"/> : <UploadCloud size={18}/>}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'project')} disabled={isUploading.project}/>
-                  </label>
-                </div>
-                
-                <textarea required placeholder="Deskripsi" rows="2" value={newProject.desc} onChange={e=>setNewProject({...newProject, desc: e.target.value})} className={InputStyle}></textarea>
-                <button type="submit" className="w-full bg-primary-green text-bg-dark font-bold py-2 rounded hover:bg-emerald-400">Tambah Proyek</button>
-              </form>
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                {projects.map(proj => (
-                  <div key={proj.id} className="bg-black/40 p-3 rounded border flex items-center justify-between gap-4">
-                    <p className="font-bold text-sm">{proj.title}</p>
-                    <button onClick={()=>handleDeleteProject(proj.id)} className="text-red-500 hover:text-red-300"><Trash2 size={16}/></button>
-                  </div>
-                ))}
-              </div>
+          
+          <div className="w-full max-w-sm glass-panel rounded-xl p-4 shadow-lg font-mono text-xs text-left z-20 -mt-10">
+            <div className="flex items-center gap-2 mb-2 border-b border-primary-green/20 pb-2">
+              <Terminal size={14} className="text-primary-green"/>
+              <span className="text-primary-green">system_status.sh</span>
             </div>
-
-            {/* 4. GALERI */}
-            <div className="glass-panel p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-primary-green"><ImageIcon size={20}/> Kelola Galeri</h2>
-              <form onSubmit={handleAddPhoto} className="flex gap-2 mb-6">
-                <div className="flex-1 space-y-2">
-                  {/* Upload Foto Galeri */}
-                  <div className="flex gap-2">
-                    <input required type="text" placeholder="URL Foto" value={newPhoto.url} onChange={e=>setNewPhoto({...newPhoto, url: e.target.value})} className={InputStyle}/>
-                    <label className="bg-primary-green/20 hover:bg-primary-green/40 text-primary-green border border-primary-green/50 p-2.5 rounded cursor-pointer flex items-center justify-center min-w-[48px]">
-                      {isUploading.gallery ? <Loader2 size={18} className="animate-spin"/> : <UploadCloud size={18}/>}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'gallery')} disabled={isUploading.gallery}/>
-                    </label>
-                  </div>
-                  <input required type="text" placeholder="Caption" value={newPhoto.caption} onChange={e=>setNewPhoto({...newPhoto, caption: e.target.value})} className={InputStyle}/>
-                </div>
-                <button type="submit" className="bg-primary-green text-bg-dark p-3 rounded hover:bg-emerald-400 h-fit mt-auto"><Plus size={24}/></button>
-              </form>
-              <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
-                {gallery.map(photo => (
-                  <div key={photo.id} className="relative group rounded overflow-hidden">
-                    <img src={photo.url} alt="Galeri" className="w-full h-24 object-cover" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <button onClick={()=>handleDeletePhoto(photo.id)} className="bg-red-600 p-2 rounded-full text-white"><Trash2 size={14}/></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+            <p className="text-green-400">&gt; Status: Online & Ready</p>
+            <p className="text-text-muted">&gt; Location: Yogyakarta, Indonesia</p>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* 1. Portfolio Section */}
+      <section id="projects" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
+        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">PORTFOLIO & PROJECTS</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {projects.map((proj) => (
+            <motion.div whileHover={{ y: -8 }} key={proj.id} className="glass-panel rounded-xl overflow-hidden group">
+              <div className="h-48 overflow-hidden relative">
+                <img src={proj.image} alt={proj.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
+              </div>
+              <div className="p-6">
+                <p className="text-primary-green font-mono text-xs mb-2 uppercase tracking-wider">{proj.category}</p>
+                <h3 className="text-xl font-bold mb-3">{proj.title}</h3>
+                <p className="text-sm text-text-muted mb-4 line-clamp-3">{proj.desc}</p>
+                <div className="text-xs font-mono text-gray-300 bg-black/60 p-2.5 rounded border border-gray-800">{proj.tech}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* 2. Achievements Section */}
+      <section id="achievements" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
+        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">PENCAPAIAN & PRESTASI</h2>
+        <div className="space-y-4">
+          {achievements.map((ach) => (
+            <div key={ach.id} className="glass-panel p-6 rounded-lg flex flex-col md:flex-row md:items-center gap-4 hover:border-primary-green/50 transition-colors">
+              <div className="font-mono text-xl text-primary-green font-bold shrink-0">{ach.year}</div>
+              <div className="w-full h-px bg-primary-green/20 md:w-px md:h-12 hidden md:block"></div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">{ach.title}</h3>
+                <p className="text-text-muted text-sm">{ach.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. Gallery / Documentation Section */}
+      <section id="gallery" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10 mb-20">
+        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">GALERI & DOKUMENTASI</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {gallery.map((photo) => (
+            <div key={photo.id} className="glass-panel p-3 rounded-xl group relative overflow-hidden">
+              <div className="aspect-[4/3] rounded-lg overflow-hidden">
+                <img src={photo.url} alt="Dokumentasi" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+              </div>
+              <div className="absolute inset-0 bg-black/80 flex items-end p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <p className="text-sm font-medium text-white">{photo.caption}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </motion.div>
   );
 }
