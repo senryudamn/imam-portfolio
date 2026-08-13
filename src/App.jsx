@@ -6,7 +6,7 @@ import AdminPanel from './pages/AdminPanel';
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="bottom-right" toastOptions={{ style: { background: '#1a0b12', color: '#fff', border: '1px solid #e11d48' } }} />
+      <Toaster position="bottom-right" toastOptions={{ style: { background: '#020617', color: '#10b981', border: '1px solid #047857' } }} />
       <Routes>
         <Route path="/" element={<MainPortfolio />} />
         <Route path="/admin" element={<AdminPanel />} />

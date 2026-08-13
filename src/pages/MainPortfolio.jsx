@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Terminal, Lock } from 'lucide-react';
 import { getProfile, getProjects, getAchievements, getGallery } from '../data';
 import { Link } from 'react-router-dom';
+import Lanyard from '../components/Lanyard';
 
 export default function MainPortfolio() {
   const [loading, setLoading] = useState(true);
@@ -35,7 +36,6 @@ export default function MainPortfolio() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="min-h-screen">
-      {/* Navbar Minimalis */}
       <nav className="fixed top-0 w-full glass-panel z-50 py-4 px-6 md:px-12 flex justify-between items-center">
         <div className="font-mono text-primary-green font-bold text-xl tracking-wider">IMAM.dev</div>
         <div className="hidden md:flex gap-6 text-sm font-semibold items-center">
@@ -49,14 +49,12 @@ export default function MainPortfolio() {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section id="about" className="pt-32 pb-20 px-6 sm:px-12 max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-6 z-20">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight">{profile.name}</h1>
           <h2 className="text-2xl font-mono text-primary-green">{profile.role}</h2>
           <p className="text-lg text-text-muted leading-relaxed max-w-xl">{profile.bio}</p>
 
-          {/* Social Icons */}
           <div className="flex gap-4 pt-4">
             {profile.linkedin && (
               <a href={profile.linkedin} target="_blank" rel="noreferrer" className="p-3 glass-panel rounded-full hover:bg-primary-green hover:text-white transition">
@@ -81,12 +79,13 @@ export default function MainPortfolio() {
           </div>
         </div>
 
-        {/* Profile Info / Avatar */}
-        <div className="flex-1 w-full flex flex-col items-center gap-6">
-          <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-full overflow-hidden border-4 border-primary-green/50 shadow-[0_0_40px_rgba(16,185,129,0.3)] shrink-0">
-            <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+        {/* AREA LANYARD 3D / ID CARD HACKER */}
+        <div className="flex-1 w-full flex flex-col items-center gap-6 relative">
+          <div className="w-full h-[450px] sm:h-[550px] relative shrink-0">
+             <Lanyard position={[0, 0, 20]} gravity={[0, -40, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
           </div>
-          <div className="w-full glass-panel rounded-xl p-4 shadow-lg font-mono text-xs text-left">
+          
+          <div className="w-full max-w-sm glass-panel rounded-xl p-4 shadow-lg font-mono text-xs text-left z-20 -mt-10">
             <div className="flex items-center gap-2 mb-2 border-b border-primary-green/20 pb-2">
               <Terminal size={14} className="text-primary-green"/>
               <span className="text-primary-green">system_status.sh</span>
@@ -97,7 +96,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* 1. Portfolio Section */}
       <section id="projects" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
         <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">PORTFOLIO & PROJECTS</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -117,7 +115,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* 2. Achievements Section */}
       <section id="achievements" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
         <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">PENCAPAIAN & PRESTASI</h2>
         <div className="space-y-4">
@@ -134,7 +131,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* 3. Gallery / Documentation Section */}
       <section id="gallery" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10 mb-20">
         <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">GALERI & DOKUMENTASI</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
