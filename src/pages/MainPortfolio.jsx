@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, Lock } from 'lucide-react';
 import { getProfile, getProjects, getAchievements, getGallery } from '../data';
-import { Link } from 'react-router-dom';
 import Lanyard from '../components/Lanyard'; 
 
 export default function MainPortfolio() {
@@ -21,6 +20,12 @@ export default function MainPortfolio() {
     return () => clearTimeout(timer);
   }, []);
 
+  // JALUR KERAS: Fungsi ini akan memaksa browser memuat ulang menuju halaman admin (TIDAK AKAN STUCK LAGI)
+  const goToAdmin = (e) => {
+    e.preventDefault();
+    window.location.href = '/admin';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bg-dark">
@@ -35,7 +40,7 @@ export default function MainPortfolio() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="min-h-screen">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="min-h-screen bg-bg-dark">
       
       {/* NAVBAR */}
       <nav className="fixed top-0 w-full glass-panel z-50 py-4 px-6 md:px-12 flex justify-between items-center">
@@ -47,17 +52,17 @@ export default function MainPortfolio() {
           <a href="#gallery" className="hover:text-primary-green transition">Galeri</a>
           <a href="#contact" className="hover:text-primary-green transition">Hubungi</a>
           
-          {/* FIX ROUTING: Menggunakan Link dari react-router-dom untuk SPA navigation */}
-          <Link to="/admin" className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30">
+          {/* TOMBOL ADMIN DIPERBAIKI */}
+          <button onClick={goToAdmin} className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30 cursor-pointer">
             <Lock size={14}/> Admin Mode
-          </Link>
+          </button>
         </div>
       </nav>
 
-      {/* HERO SECTION (Foto Profil Kotak Hitam Putih) */}
+      {/* HERO SECTION (Foto Profil Kotak & Hitam Putih) */}
       <section id="about" className="pt-32 pb-20 px-6 sm:px-12 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12">
         <div className="flex-1 space-y-6 z-20">
-          <h1 className="text-5xl md:text-7xl font-bold leading-tight">{profile.name}</h1>
+          <h1 className="text-5xl md:text-7xl font-bold leading-tight text-white">{profile.name}</h1>
           <h2 className="text-2xl font-mono text-primary-green">{profile.role}</h2>
           <p className="text-lg text-text-muted leading-relaxed max-w-xl">{profile.bio}</p>
 
@@ -82,21 +87,19 @@ export default function MainPortfolio() {
 
         {/* FOTO PROFIL KOTAK & HITAM PUTIH */}
         <div className="flex-1 w-full flex justify-center md:justify-end">
-          <div className="relative w-64 h-80 md:w-80 md:h-96 shadow-2xl border-4 border-primary-green/20">
+          <div className="w-64 h-80 md:w-80 md:h-96 shadow-2xl relative">
             <img 
               src={profile.avatar} 
               alt="Profile" 
-              className="w-full h-full object-cover grayscale"
+              className="w-full h-full object-cover grayscale border-4 border-[#10b981]/30"
+              style={{ borderRadius: '0px' }} // Memastikan sudut kaku/kotak
             />
-            {/* Aksen sudut ala tech */}
-            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary-green"></div>
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary-green"></div>
           </div>
         </div>
       </section>
 
       <section id="projects" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
-        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">PORTFOLIO & PROJECTS</h2>
+        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide text-white">PORTFOLIO & PROJECTS</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {projects.map((proj) => (
             <motion.div whileHover={{ y: -8 }} key={proj.id} className="glass-panel rounded-xl overflow-hidden group">
@@ -105,7 +108,7 @@ export default function MainPortfolio() {
               </div>
               <div className="p-6">
                 <p className="text-primary-green font-mono text-xs mb-2 uppercase tracking-wider">{proj.category}</p>
-                <h3 className="text-xl font-bold mb-3">{proj.title}</h3>
+                <h3 className="text-xl font-bold mb-3 text-white">{proj.title}</h3>
                 <p className="text-sm text-text-muted mb-4 line-clamp-3">{proj.desc}</p>
                 <div className="text-xs font-mono text-gray-300 bg-black/60 p-2.5 rounded border border-gray-800">{proj.tech}</div>
               </div>
@@ -115,7 +118,7 @@ export default function MainPortfolio() {
       </section>
 
       <section id="achievements" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
-        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">PENCAPAIAN & PRESTASI</h2>
+        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide text-white">PENCAPAIAN & PRESTASI</h2>
         <div className="space-y-4">
           {achievements.map((ach) => (
             <div key={ach.id} className="glass-panel p-6 rounded-lg flex flex-col md:flex-row md:items-center gap-4 hover:border-primary-green/50 transition-colors">
@@ -131,7 +134,7 @@ export default function MainPortfolio() {
       </section>
 
       <section id="gallery" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
-        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">GALERI & DOKUMENTASI</h2>
+        <h2 className="text-3xl font-bold mb-10 text-center tracking-wide text-white">GALERI & DOKUMENTASI</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {gallery.map((photo) => (
             <div key={photo.id} className="glass-panel p-3 rounded-xl group relative overflow-hidden">
@@ -146,20 +149,16 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* SEKSI HUBUNGI (BACKGROUND PUTIH & LANYARD 3D) */}
-      <section id="contact" className="w-full bg-[#f8fafc] text-black py-20 relative overflow-hidden mt-12">
+      {/* SEKSI HUBUNGI DENGAN LANYARD (BACKGROUND PUTIH) */}
+      <section id="contact" className="w-full bg-white text-black pt-10 pb-20 relative overflow-hidden mt-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col items-center z-20 relative">
-          <h2 className="text-4xl font-black mb-4 tracking-wide text-slate-900">HUBUNGI SAYA</h2>
-          <p className="text-slate-600 mb-8 text-center max-w-md font-medium">
-            Tertarik untuk berkolaborasi dalam proyek inovasi mekatronika dan IoT? Tarik kartu ID saya di bawah ini!
-          </p>
           
-          <div className="w-full h-[550px] relative">
-             {/* Komponen Lanyard sekarang berada di area putih */}
-             <Lanyard position={[0, 0, 20]} gravity={[0, -40, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
+          {/* LANYARD 3D */}
+          <div className="w-full h-[600px] relative -mt-10 mb-8 cursor-grab active:cursor-grabbing">
+             <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
           </div>
 
-          <a href={`mailto:${profile.email}`} className="mt-8 bg-primary-green text-black font-bold px-8 py-3 rounded-full hover:bg-emerald-400 transition transform hover:scale-105 shadow-lg border-2 border-transparent hover:border-slate-900">
+          <a href={`mailto:${profile.email}`} className="bg-primary-green text-white font-bold text-lg px-10 py-4 rounded-full hover:bg-emerald-500 transition shadow-lg flex items-center gap-2">
             Kirim Email
           </a>
         </div>
