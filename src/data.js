@@ -1,12 +1,15 @@
 import { db } from './firebase'; 
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
+// FIX: Menggunakan UI Avatar yang dijamin selalu online agar Canvas 3D tidak CRASH 404
+const SAFE_AVATAR = "https://ui-avatars.com/api/?name=Imam+Akbari&background=10b981&color=fff&size=512";
+
 // Fallback data jika Firebase kosong / error
 const DEFAULT_PROFILE = {
   name: "Imam Akbari Majid",
   role: "S-1 Pendidikan Teknik Mekatronika",
   bio: "Mahasiswa di Universitas Negeri Yogyakarta. Terobsesi dengan otomasi, merakit sistem IoT, dan membangun arsitektur tertanam (embedded systems) yang menjembatani perangkat keras dan perangkat lunak secara fungsional.",
-  avatar: "https://res.cloudinary.com/aj1qdylv/image/upload/v1712345678/default_avatar.jpg",
+  avatar: SAFE_AVATAR, 
   linkedin: "https://linkedin.com/in/imam-akbari-majid",
   github: "https://github.com/senryudamn",
   instagram: "https://instagram.com/imamakbarimajid",
@@ -26,7 +29,6 @@ const withTimeout = (promise, ms = 3000) => {
 export const fetchProfile = async () => {
   try {
     const docRef = doc(db, "portfolio", "profile");
-    // Gunakan withTimeout agar tidak terjebak loading abadi
     const docSnap = await withTimeout(getDoc(docRef));
     if (docSnap.exists()) return docSnap.data();
     return DEFAULT_PROFILE;
@@ -64,16 +66,16 @@ export const fetchAchievements = async () => {
     }
   };
 
-  export const fetchGallery = async () => {
-    try {
-      const querySnapshot = await withTimeout(getDocs(collection(db, "gallery")));
-      const gallery = [];
-      querySnapshot.forEach((doc) => {
-        gallery.push({ id: doc.id, ...doc.data() });
-      });
-      return gallery;
-    } catch (error) {
-      console.error("Gagal mengambil gallery:", error.message);
-      return [];
-    }
-  };
+export const fetchGallery = async () => {
+  try {
+    const querySnapshot = await withTimeout(getDocs(collection(db, "gallery")));
+    const gallery = [];
+    querySnapshot.forEach((doc) => {
+      gallery.push({ id: doc.id, ...doc.data() });
+    });
+    return gallery;
+  } catch (error) {
+    console.error("Gagal mengambil gallery:", error.message);
+    return [];
+  }
+};
