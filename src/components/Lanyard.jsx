@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, extend, useFrame } from '@react-three/fiber';
+import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
 import { useTexture, Environment, Lightformer } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
@@ -18,32 +18,18 @@ export default function Lanyard({
   transparent = true,
   frontImage = null,
   backImage = null,
-  lanyardWidth = 1.2
+  lanyardWidth = 1.5
 }) {
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <div className="relative z-10 w-full h-full flex justify-center items-center cursor-grab active:cursor-grabbing">
       <Canvas
         camera={{ position: position, fov: fov }}
-        dpr={[1, isMobile ? 1.5 : 2]}
         gl={{ alpha: transparent }}
         onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x000000), transparent ? 0 : 1)}
       >
         <ambientLight intensity={Math.PI} />
-        <Physics gravity={gravity} timeStep={isMobile ? 1/30 : 1/60}>
-          <Band
-            isMobile={isMobile}
-            frontImage={frontImage}
-            backImage={backImage}
-            lanyardWidth={lanyardWidth}
-          />
+        <Physics gravity={gravity} timeStep={1/60}>
+          <Band frontImage={frontImage} backImage={backImage} lanyardWidth={lanyardWidth} />
         </Physics>
         <Environment blur={0.75}>
           <Lightformer intensity={2} color="white" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
@@ -56,11 +42,12 @@ export default function Lanyard({
   );
 }
 
-function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = null, backImage = null, lanyardWidth = 1.2 }) {
+function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = null, lanyardWidth = 1.5 }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
-  
+
+  const { size } = useThree(); // INI ADALAH KUNCI AGAR TALI TIDAK HILANG
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
@@ -71,17 +58,17 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
     canvas.width = 512;
     canvas.height = 720;
     const ctx = canvas.getContext('2d');
-    
-    ctx.fillStyle = '#020617'; 
+
+    ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, 512, 720);
-    
+
     const img = baseTex.image;
     const scale = Math.max(512 / img.width, 720 / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     const dx = (512 - dw) / 2;
     const dy = (720 - dh) / 2;
-    
+
     ctx.drawImage(img, dx, dy, dw, dh);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -98,7 +85,9 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.4, 0]]);
+  
+  // MENGHUBUNGKAN TALI TEPAT KE CINCIN PENGAIT 
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
 
   useEffect(() => {
     if (hovered) {
@@ -125,14 +114,13 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
       curve.points[1].copy(j2.current.lerped);
       curve.points[2].copy(j1.current.lerped);
       curve.points[3].copy(fixed.current.translation());
-      band.current.geometry.setPoints(curve.getPoints(isMobile ? 16 : 32));
+      band.current.geometry.setPoints(curve.getPoints(32));
       ang.copy(card.current.angvel());
       rot.copy(card.current.rotation());
       card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z });
     }
   });
 
-  curve.curveType = 'chordal';
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
   return (
@@ -141,8 +129,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
       <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
-      
-      {/* KARTU ID 3D PROCUDURAL */}
+
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
         <CuboidCollider args={[0.8, 1.125, 0.02]} />
         <group
@@ -154,6 +141,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
+          {/* Kartu Utama */}
           <mesh>
             <boxGeometry args={[1.6, 2.25, 0.04]} />
             <meshStandardMaterial attach="material-0" color="#10b981" />
@@ -164,21 +152,31 @@ function Band({ maxSpeed = 50, minSpeed = 10, isMobile = false, frontImage = nul
             <meshPhysicalMaterial attach="material-5" map={backMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
           </mesh>
 
-          {/* Plat Besi & Cincin Pengait */}
-          <mesh position={[0, 1.125, 0]}>
-            <boxGeometry args={[0.5, 0.15, 0.06]} />
-            <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+          {/* Plat Besi (Metal Clip) - Dibuat Lebih Besar dan Jelas */}
+          <mesh position={[0, 1.2, 0]}>
+            <cylinderGeometry args={[0.1, 0.1, 0.4]} rotation={[0, 0, Math.PI / 2]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={1} roughness={0.2} />
           </mesh>
-          <mesh position={[0, 1.25, 0]}>
-            <torusGeometry args={[0.08, 0.025, 16, 32]} />
-            <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+
+          {/* Cincin Pengait Tali (Ring) - Dibuat Lebih Besar */}
+          <mesh position={[0, 1.35, 0]}>
+            <torusGeometry args={[0.1, 0.03, 16, 32]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={1} roughness={0.2} />
           </mesh>
         </group>
       </RigidBody>
 
       <mesh ref={band}>
         <meshLineGeometry />
-        <meshLineMaterial color="white" depthTest={false} resolution={isMobile ? [1000, 2000] : [1000, 1000]} useMap map={texture} repeat={[-4, 1]} lineWidth={lanyardWidth} />
+        <meshLineMaterial
+          color="white"
+          depthTest={false}
+          resolution={[size.width, size.height]} 
+          useMap
+          map={texture}
+          repeat={[-4, 1]}
+          lineWidth={lanyardWidth}
+        />
       </mesh>
     </group>
   );
