@@ -1,8 +1,9 @@
 import { db } from './firebase'; 
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
-// FIX: Menggunakan UI Avatar yang dijamin selalu online agar Canvas 3D tidak CRASH 404
-const SAFE_AVATAR = "https://ui-avatars.com/api/?name=Imam+Akbari&background=10b981&color=fff&size=512";
+// FIX MUTLAK CRASH 3D: Menggunakan Base64 Image (Gambar transparan murni dari string teks).
+// Ini 1000% kebal dari pemblokiran CORS Chrome dan dijamin tidak akan membuat Canvas 3D crash.
+const SAFE_AVATAR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 // Fallback data jika Firebase kosong / error
 const DEFAULT_PROFILE = {
