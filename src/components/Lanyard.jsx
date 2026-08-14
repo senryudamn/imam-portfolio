@@ -5,14 +5,14 @@ import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphe
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-// KITA GUNAKAN KEMBALI FILE GLB ASLI ANDA
-import cardGLB from './card.glb'; 
+// MEMANGGIL FILE GLB ASLI ANDA
+import cardGLB from './card.glb';
 import lanyard from './lanyard.svg';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 const BLANK_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-export default function Lanyard({ position = [0, 0, 20], gravity = [0, -40, 0], fov = 20, frontImage = null, backImage = null }) {
+export default function Lanyard({ position = [0, 0, 15], gravity = [0, -40, 0], fov = 20, frontImage = null, backImage = null }) {
   return (
     <Canvas camera={{ position: position, fov: fov }} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
       <ambientLight intensity={Math.PI} />
@@ -34,7 +34,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
 
-  // MEMUAT NODE DARI FILE card.glb ASLI
+  // MENGAMBIL OBJEK DARI FILE card.glb ASLI ANDA
   const { nodes, materials } = useGLTF(cardGLB);
   
   const texture = useTexture(lanyard);
@@ -62,12 +62,13 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
-  useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
-  useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
-  useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
+  // FIX TALI KEPANJANGAN: Memendekkan jarak antar sendi menjadi 0.5
+  useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 0.5]);
+  useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 0.5]);
+  useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 0.5]);
   
-  // Fisika sendi disambung ke pusat kartu
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
+  // FIX TALI PUTUS & KARTU TERBANG: Menempelkan ujung tali tepat ke koordinat Y: 0.9 (sesuai skala baru)
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 0.9, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -88,10 +89,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
 
-      // SOLUSI MUTLAK TALI PUTUS: Menghitung koordinat jepitan besi secara matematis (Y: 1.45) dari pusat kartu
+      // Menyambung titik 0 tali mutlak ke ujung kartu
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      const offset = new THREE.Vector3(0, 1.45, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      const offset = new THREE.Vector3(0, 0.9, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
@@ -116,8 +117,8 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
         <CuboidCollider args={[0.8, 1.125, 0.01]} />
         <group
-          scale={2.25}
-          position={[0, -1.2, -0.05]}
+          scale={1.5} // FIX: MENGECILKAN UKURAN KARTU
+          position={[0, -0.8, -0.05]}
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -126,7 +127,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* MENGGUNAKAN GLB ASLI ANDA */}
+          {/* RENDER MODEL ASLI DARI CARD.GLB ANDA */}
           {nodes?.card?.geometry && (
             <mesh geometry={nodes.card.geometry}>
               <meshPhysicalMaterial map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
@@ -141,10 +142,9 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         </group>
       </RigidBody>
       
-      {/* frustumCulled={false} mencegah tali menghilang saat ditarik */}
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
-        <meshLineMaterial color="white" depthTest={false} resolution={[2000, 2000]} useMap map={texture} repeat={[-4, 1]} lineWidth={2.5} />
+        <meshLineMaterial color="#cbd5e1" depthTest={false} resolution={[2000, 2000]} useMap map={texture} repeat={[-4, 1]} lineWidth={1.5} />
       </mesh>
     </group>
   );
