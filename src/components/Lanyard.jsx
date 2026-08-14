@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, extend, useFrame } from '@react-three/fiber';
-import { useTexture, Environment, Lightformer } from '@react-three/drei';
+import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
+
+// KITA GUNAKAN KEMBALI FILE GLB ASLI ANDA
+import cardGLB from './card.glb'; 
 import lanyard from './lanyard.svg';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
@@ -31,6 +34,9 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
 
+  // MEMUAT NODE DARI FILE card.glb ASLI
+  const { nodes, materials } = useGLTF(cardGLB);
+  
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
@@ -60,8 +66,8 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
   
-  // FIX MUTLAK TALI PUTUS: Disambung tepat di koordinat Y: 1.35
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.35, 0]]);
+  // Fisika sendi disambung ke pusat kartu
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -82,10 +88,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
 
-      // Menautkan pangkal visual tali dengan matematika rotasi yang presisi
+      // SOLUSI MUTLAK TALI PUTUS: Menghitung koordinat jepitan besi secara matematis (Y: 1.45) dari pusat kartu
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      const offset = new THREE.Vector3(0, 1.35, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      const offset = new THREE.Vector3(0, 1.45, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
@@ -108,8 +114,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        <CuboidCollider args={[0.8, 1.125, 0.02]} />
+        <CuboidCollider args={[0.8, 1.125, 0.01]} />
         <group
+          scale={2.25}
+          position={[0, -1.2, -0.05]}
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -118,25 +126,22 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          <mesh>
-            <boxGeometry args={[1.6, 2.25, 0.04]} />
-            <meshStandardMaterial attach="material-0" color="#e2e8f0" />
-            <meshStandardMaterial attach="material-1" color="#e2e8f0" />
-            <meshStandardMaterial attach="material-2" color="#e2e8f0" />
-            <meshStandardMaterial attach="material-3" color="#e2e8f0" />
-            <meshPhysicalMaterial attach="material-4" map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
-            <meshPhysicalMaterial attach="material-5" map={backMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
-          </mesh>
-          <mesh position={[0, 1.2, 0]}>
-            <cylinderGeometry args={[0.15, 0.15, 0.4]} rotation={[0, 0, Math.PI / 2]} />
-            <meshStandardMaterial color="#64748b" metalness={1} roughness={0.2} />
-          </mesh>
-          <mesh position={[0, 1.35, 0]}>
-            <torusGeometry args={[0.1, 0.04, 16, 32]} />
-            <meshStandardMaterial color="#64748b" metalness={1} roughness={0.2} />
-          </mesh>
+          {/* MENGGUNAKAN GLB ASLI ANDA */}
+          {nodes?.card?.geometry && (
+            <mesh geometry={nodes.card.geometry}>
+              <meshPhysicalMaterial map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
+            </mesh>
+          )}
+          {nodes?.clip?.geometry && materials?.metal && (
+            <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
+          )}
+          {nodes?.clamp?.geometry && materials?.metal && (
+            <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
+          )}
         </group>
       </RigidBody>
+      
+      {/* frustumCulled={false} mencegah tali menghilang saat ditarik */}
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
         <meshLineMaterial color="white" depthTest={false} resolution={[2000, 2000]} useMap map={texture} repeat={[-4, 1]} lineWidth={2.5} />
