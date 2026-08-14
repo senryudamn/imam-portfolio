@@ -1,4 +1,4 @@
-import { db } from './lib/firebase';
+import { db } from './firebase'; // <-- FIX: Menyesuaikan dengan struktur file Anda yang sebenarnya
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
 // Fallback data jika Firebase kosong
