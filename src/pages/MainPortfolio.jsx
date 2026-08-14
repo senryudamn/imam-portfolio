@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, Lock, ArrowUpRight } from 'lucide-react';
-import { getProfile, getProjects, getAchievements, getGallery } from '../data';
+// FIX: Menggunakan fungsi fetch* dari data.js yang baru
+import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 
@@ -13,13 +14,32 @@ export default function MainPortfolio() {
   const [gallery, setGallery] = useState([]);
 
   useEffect(() => {
-    setProfile(getProfile());
-    setProjects(getProjects());
-    setAchievements(getAchievements());
-    setGallery(getGallery());
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
+    // FIX: Mengambil data secara asynchronous dari Firebase
+    const loadData = async () => {
+      try {
+        const profileData = await fetchProfile();
+        const projectsData = await fetchProjects();
+        const achievementsData = await fetchAchievements();
+        const galleryData = await fetchGallery();
+
+        setProfile(profileData);
+        setProjects(projectsData);
+        setAchievements(achievementsData);
+        setGallery(galleryData);
+      } catch (error) {
+        console.error("Gagal memuat data", error);
+      } finally {
+        setTimeout(() => setLoading(false), 800); // Sedikit jeda agar loading text terlihat rapi
+      }
+    };
+
+    loadData();
   }, []);
+
+  const forceGoToAdmin = (e) => {
+    e.preventDefault();
+    window.location.href = '/admin';
+  };
 
   if (loading) {
     return (
@@ -35,7 +55,7 @@ export default function MainPortfolio() {
   return (
     <div className="min-h-screen bg-[#fcfcfc] text-slate-900 font-sans selection:bg-[#10b981] selection:text-white">
       
-      {/* NAVBAR MINIMALIS */}
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full bg-[#fcfcfc]/90 backdrop-blur-md z-50 py-5 px-6 md:px-12 flex justify-between items-center border-b border-slate-200">
         <div className="font-black text-xl tracking-tighter flex items-center gap-2">
           <div className="w-3 h-3 bg-[#10b981] rounded-full"></div>
@@ -47,10 +67,9 @@ export default function MainPortfolio() {
           <a href="#achievements" className="hover:text-[#10b981] transition-colors">Experience</a>
           <a href="#contact" className="hover:text-[#10b981] transition-colors">Contact</a>
           
-          {/* FIX MUTLAK ADMIN STUCK: Menggunakan tag <a> biasa untuk hard-reload server */}
-          <a href="/admin" className="flex items-center gap-1.5 text-[#10b981] hover:text-white hover:bg-[#10b981] transition-all px-4 py-1.5 rounded-full border border-[#10b981]">
+          <button onClick={forceGoToAdmin} className="flex items-center gap-1.5 text-[#10b981] hover:text-white hover:bg-[#10b981] transition-all px-4 py-1.5 rounded-full border border-[#10b981]">
             <Lock size={14}/> Admin Mode
-          </a>
+          </button>
         </div>
       </nav>
 
@@ -89,7 +108,6 @@ export default function MainPortfolio() {
               alt="Profile" 
               className="w-full h-full object-cover grayscale border border-slate-300"
             />
-            {/* Dekorasi tech kecil */}
             <div className="absolute -bottom-4 -left-4 bg-white p-3 shadow-lg border border-slate-100 flex items-center gap-2">
               <div className="w-2 h-2 bg-[#10b981] rounded-full animate-pulse"></div>
               <span className="text-xs font-bold font-mono">AVAILABLE FOR WORK</span>
@@ -127,7 +145,7 @@ export default function MainPortfolio() {
                 </h3>
                 <p className="text-slate-600 mb-6 line-clamp-3 leading-relaxed">{proj.desc}</p>
                 <div className="mt-auto flex flex-wrap gap-2">
-                  {proj.tech.split(',').map((tech, idx) => (
+                  {(proj.tech || "").split(',').map((tech, idx) => (
                     <span key={idx} className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded border border-slate-200">{tech.trim()}</span>
                   ))}
                 </div>
@@ -163,7 +181,6 @@ export default function MainPortfolio() {
             Reach out via email or drag the ID card below to connect!
           </p>
           
-          {/* LANYARD 3D KECIL & DI TENGAH */}
           <div className="w-full h-[500px] relative -mt-8 mb-12 cursor-grab active:cursor-grabbing">
              <Lanyard position={[0, 0, 12]} gravity={[0, -30, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
           </div>
