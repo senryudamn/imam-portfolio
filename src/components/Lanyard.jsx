@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, extend, useFrame } from '@react-three/fiber';
 import { useTexture, Environment, Lightformer } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
@@ -47,7 +47,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
 
-  const { size } = useThree(); // INI ADALAH KUNCI AGAR TALI TIDAK HILANG
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
@@ -86,7 +85,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
   
-  // MENGHUBUNGKAN TALI TEPAT KE CINCIN PENGAIT 
   useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
 
   useEffect(() => {
@@ -121,6 +119,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
     }
   });
 
+  curve.curveType = 'chordal';
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
   return (
@@ -141,7 +140,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* Kartu Utama */}
           <mesh>
             <boxGeometry args={[1.6, 2.25, 0.04]} />
             <meshStandardMaterial attach="material-0" color="#10b981" />
@@ -151,14 +149,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             <meshPhysicalMaterial attach="material-4" map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
             <meshPhysicalMaterial attach="material-5" map={backMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
           </mesh>
-
-          {/* Plat Besi (Metal Clip) - Dibuat Lebih Besar dan Jelas */}
           <mesh position={[0, 1.2, 0]}>
             <cylinderGeometry args={[0.1, 0.1, 0.4]} rotation={[0, 0, Math.PI / 2]} />
             <meshStandardMaterial color="#cbd5e1" metalness={1} roughness={0.2} />
           </mesh>
-
-          {/* Cincin Pengait Tali (Ring) - Dibuat Lebih Besar */}
           <mesh position={[0, 1.35, 0]}>
             <torusGeometry args={[0.1, 0.03, 16, 32]} />
             <meshStandardMaterial color="#cbd5e1" metalness={1} roughness={0.2} />
@@ -171,7 +165,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         <meshLineMaterial
           color="white"
           depthTest={false}
-          resolution={[size.width, size.height]} 
+          resolution={[1000, 1000]} 
           useMap
           map={texture}
           repeat={[-4, 1]}
