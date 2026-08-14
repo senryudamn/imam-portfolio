@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-// Mengambil data rahasia dari file .env
+// Menggunakan variabel environment dari Vercel / .env
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -13,7 +14,8 @@ const firebaseConfig = {
 
 // Inisialisasi Firebase
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-// Ekspor modul Autentikasi Google
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+export { auth, db, googleProvider };
