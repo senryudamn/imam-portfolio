@@ -57,17 +57,14 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
     canvas.width = 512;
     canvas.height = 720;
     const ctx = canvas.getContext('2d');
-
     ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, 512, 720);
-
     const img = baseTex.image;
     const scale = Math.max(512 / img.width, 720 / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     const dx = (512 - dw) / 2;
     const dy = (720 - dh) / 2;
-
     ctx.drawImage(img, dx, dy, dw, dh);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -84,7 +81,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  
   useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
 
   useEffect(() => {
@@ -102,24 +98,32 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
       [card, j1, j2, j3, fixed].forEach(ref => ref.current?.wakeUp());
       card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z });
     }
-    if (fixed.current) {
+    if (fixed.current && card.current) {
       [j1, j2].forEach(ref => {
         if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation());
         const clampedDistance = Math.max(0.1, Math.min(1, ref.current.lerped.distanceTo(ref.current.translation())));
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
-      curve.points[0].copy(j3.current.translation());
+
+      // FIX: Menempelkan ujung tali secara permanen ke koordinat cincin (meskipun fisik terayun)
+      const cardPos = card.current.translation();
+      const cardRot = card.current.rotation();
+      const ringOffset = new THREE.Vector3(0, 1.45, 0).applyQuaternion(
+        new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w)
+      );
+      
+      curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(ringOffset));
       curve.points[1].copy(j2.current.lerped);
       curve.points[2].copy(j1.current.lerped);
       curve.points[3].copy(fixed.current.translation());
       band.current.geometry.setPoints(curve.getPoints(32));
+      
       ang.copy(card.current.angvel());
       rot.copy(card.current.rotation());
       card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z });
     }
   });
 
-  curve.curveType = 'chordal';
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
   return (
@@ -160,12 +164,13 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         </group>
       </RigidBody>
 
-      <mesh ref={band}>
+      {/* FIX: Mematikan Frustum Culling agar tali tidak hilang saat ditarik ke tepi */}
+      <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
         <meshLineMaterial
           color="white"
           depthTest={false}
-          resolution={[1000, 1000]} 
+          resolution={[2000, 2000]} 
           useMap
           map={texture}
           repeat={[-4, 1]}

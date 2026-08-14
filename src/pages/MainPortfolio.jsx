@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, Lock } from 'lucide-react';
 import { getProfile, getProjects, getAchievements, getGallery } from '../data';
-import { Link } from 'react-router-dom';
-import Lanyard from '../components/Lanyard';
+import Lanyard from '../components/Lanyard'; 
 
 export default function MainPortfolio() {
   const [loading, setLoading] = useState(true);
@@ -43,9 +42,11 @@ export default function MainPortfolio() {
           <a href="#projects" className="hover:text-primary-green transition">Portfolio</a>
           <a href="#achievements" className="hover:text-primary-green transition">Prestasi</a>
           <a href="#gallery" className="hover:text-primary-green transition">Galeri</a>
-          <Link to="/admin" className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30">
+          
+          {/* FIX: Menggunakan tag <a> biasa agar memaksa pindah halaman (Hard Navigation) */}
+          <a href="/admin" className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30">
             <Lock size={14}/> Admin Mode
-          </Link>
+          </a>
         </div>
       </nav>
 
