@@ -4,26 +4,14 @@ import { useTexture, Environment, Lightformer } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
-
 import lanyard from './lanyard.svg';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
-
 const BLANK_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-export default function Lanyard({
-  position = [0, 0, 20],
-  gravity = [0, -40, 0],
-  fov = 20,
-  frontImage = null,
-  backImage = null,
-}) {
+export default function Lanyard({ position = [0, 0, 20], gravity = [0, -40, 0], fov = 20, frontImage = null, backImage = null }) {
   return (
-    <Canvas
-      camera={{ position: position, fov: fov }}
-      gl={{ alpha: true }} // Transparent background agar warna putih dari MainPortfolio terlihat
-      onCreated={({ gl }) => gl.setClearColor(0x000000, 0)} 
-    >
+    <Canvas camera={{ position: position, fov: fov }} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
       <ambientLight intensity={Math.PI} />
       <Physics gravity={gravity} timeStep={1/60}>
         <Band frontImage={frontImage} backImage={backImage} />
@@ -50,46 +38,33 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   const createCoverTexture = (baseTex) => {
     if (!baseTex || !baseTex.image) return baseTex;
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 720;
+    canvas.width = 512; canvas.height = 720;
     const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#ffffff'; // Base putih karena background webnya putih
-    ctx.fillRect(0, 0, 512, 720);
-
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 512, 720);
     const img = baseTex.image;
     const scale = Math.max(512 / img.width, 720 / img.height);
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = (512 - dw) / 2;
-    const dy = (720 - dh) / 2;
-
+    const dw = img.width * scale; const dh = img.height * scale;
+    const dx = (512 - dw) / 2; const dy = (720 - dh) / 2;
     ctx.drawImage(img, dx, dy, dw, dh);
     const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
+    tex.colorSpace = THREE.SRGBColorSpace; return tex;
   };
 
   const frontMap = useMemo(() => createCoverTexture(frontTex), [frontTex]);
   const backMap = useMemo(() => createCoverTexture(backTex), [backTex]);
-
   const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
-  // Fisika Tali
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
   
-  // Fisika Kartu: Disambung tepat di koordinat Y: 1.45 (Posisi Cincin Pengait)
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
+  // FIX MUTLAK TALI PUTUS: Disambung tepat di koordinat Y: 1.35
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.35, 0]]);
 
   useEffect(() => {
-    if (hovered) {
-      document.body.style.cursor = dragged ? 'grabbing' : 'grab';
-      return () => void (document.body.style.cursor = 'auto');
-    }
+    if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
   }, [hovered, dragged]);
 
   useFrame((state, delta) => {
@@ -107,22 +82,18 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
 
-      // PERBAIKAN MUTLAK TALI PUTUS: 
-      // Mengikat ujung tali (curve.points[0]) SECARA LANGSUNG ke titik matematis kartu + rotasinya, bukan ke j3.
+      // Menautkan pangkal visual tali dengan matematika rotasi yang presisi
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
-      const offset = new THREE.Vector3(0, 1.45, 0).applyEuler(euler);
+      const offset = new THREE.Vector3(0, 1.35, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
       curve.points[2].copy(j1.current.lerped);
       curve.points[3].copy(fixed.current.translation());
-      
       band.current.geometry.setPoints(curve.getPoints(32));
       
-      ang.copy(card.current.angvel());
-      rot.copy(card.current.rotation());
+      ang.copy(card.current.angvel()); rot.copy(card.current.rotation());
       card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z });
     }
   });
@@ -147,7 +118,6 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* Kartu ID */}
           <mesh>
             <boxGeometry args={[1.6, 2.25, 0.04]} />
             <meshStandardMaterial attach="material-0" color="#e2e8f0" />
@@ -157,31 +127,19 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             <meshPhysicalMaterial attach="material-4" map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
             <meshPhysicalMaterial attach="material-5" map={backMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
           </mesh>
-          
-          {/* Besi Pengait Tepat di Atas Kartu */}
           <mesh position={[0, 1.2, 0]}>
             <cylinderGeometry args={[0.15, 0.15, 0.4]} rotation={[0, 0, Math.PI / 2]} />
-            <meshStandardMaterial color="#94a3b8" metalness={1} roughness={0.2} />
+            <meshStandardMaterial color="#64748b" metalness={1} roughness={0.2} />
           </mesh>
-          <mesh position={[0, 1.45, 0]}>
+          <mesh position={[0, 1.35, 0]}>
             <torusGeometry args={[0.1, 0.04, 16, 32]} />
-            <meshStandardMaterial color="#94a3b8" metalness={1} roughness={0.2} />
+            <meshStandardMaterial color="#64748b" metalness={1} roughness={0.2} />
           </mesh>
         </group>
       </RigidBody>
-
-      {/* PERBAIKAN MUTLAK TALI HILANG: frustumCulled={false} + resolusi mutlak 2000x2000 */}
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
-        <meshLineMaterial
-          color="white"
-          depthTest={false}
-          resolution={[2000, 2000]} 
-          useMap
-          map={texture}
-          repeat={[-4, 1]}
-          lineWidth={2.5} 
-        />
+        <meshLineMaterial color="white" depthTest={false} resolution={[2000, 2000]} useMap map={texture} repeat={[-4, 1]} lineWidth={2.5} />
       </mesh>
     </group>
   );
