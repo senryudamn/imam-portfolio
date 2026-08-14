@@ -57,14 +57,18 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
     canvas.width = 512;
     canvas.height = 720;
     const ctx = canvas.getContext('2d');
+
+    // Karena ditaruh di latar putih, kita beri pinggiran hitam sedikit
     ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, 512, 720);
+
     const img = baseTex.image;
     const scale = Math.max(512 / img.width, 720 / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     const dx = (512 - dw) / 2;
     const dy = (720 - dh) / 2;
+
     ctx.drawImage(img, dx, dy, dw, dh);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -78,10 +82,13 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
+  // LOGIKA FISIKA: Menyambungkan tali secara ketat
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.45, 0]]);
+  
+  // FIX TALI TERPUTUS: Titik sambung kartu diset persis di Y: 1.4 (Sama dengan posisi Cincin)
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.4, 0]]);
 
   useEffect(() => {
     if (hovered) {
@@ -98,24 +105,20 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
       [card, j1, j2, j3, fixed].forEach(ref => ref.current?.wakeUp());
       card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z });
     }
-    if (fixed.current && card.current) {
+    if (fixed.current && j3.current) {
       [j1, j2].forEach(ref => {
         if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation());
         const clampedDistance = Math.max(0.1, Math.min(1, ref.current.lerped.distanceTo(ref.current.translation())));
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
 
-      // FIX: Menempelkan ujung tali secara permanen ke koordinat cincin (meskipun fisik terayun)
-      const cardPos = card.current.translation();
-      const cardRot = card.current.rotation();
-      const ringOffset = new THREE.Vector3(0, 1.45, 0).applyQuaternion(
-        new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w)
-      );
-      
-      curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(ringOffset));
+      // FIX TALI HILANG & TERPUTUS: 
+      // Point 0 (ujung tali paling bawah) HARUS selalu mengikuti koordinat J3 secara mutlak.
+      curve.points[0].copy(j3.current.translation()); 
       curve.points[1].copy(j2.current.lerped);
       curve.points[2].copy(j1.current.lerped);
       curve.points[3].copy(fixed.current.translation());
+      
       band.current.geometry.setPoints(curve.getPoints(32));
       
       ang.copy(card.current.angvel());
@@ -146,25 +149,30 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         >
           <mesh>
             <boxGeometry args={[1.6, 2.25, 0.04]} />
-            <meshStandardMaterial attach="material-0" color="#10b981" />
-            <meshStandardMaterial attach="material-1" color="#10b981" />
-            <meshStandardMaterial attach="material-2" color="#10b981" />
-            <meshStandardMaterial attach="material-3" color="#10b981" />
+            {/* Bagian pinggiran kartu diset gelap karena latar belakang sekarang putih */}
+            <meshStandardMaterial attach="material-0" color="#0f172a" />
+            <meshStandardMaterial attach="material-1" color="#0f172a" />
+            <meshStandardMaterial attach="material-2" color="#0f172a" />
+            <meshStandardMaterial attach="material-3" color="#0f172a" />
             <meshPhysicalMaterial attach="material-4" map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
             <meshPhysicalMaterial attach="material-5" map={backMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
           </mesh>
-          <mesh position={[0, 1.2, 0]}>
-            <cylinderGeometry args={[0.1, 0.1, 0.4]} rotation={[0, 0, Math.PI / 2]} />
+          
+          {/* Plat Besi (Di Y: 1.25) */}
+          <mesh position={[0, 1.25, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 0.4]} rotation={[0, 0, Math.PI / 2]} />
             <meshStandardMaterial color="#cbd5e1" metalness={1} roughness={0.2} />
           </mesh>
-          <mesh position={[0, 1.35, 0]}>
-            <torusGeometry args={[0.1, 0.03, 16, 32]} />
+          
+          {/* Cincin Pengait (Tepat di Y: 1.4, menyatu sempurna dengan ujung tali j3) */}
+          <mesh position={[0, 1.4, 0]}>
+            <torusGeometry args={[0.08, 0.03, 16, 32]} />
             <meshStandardMaterial color="#cbd5e1" metalness={1} roughness={0.2} />
           </mesh>
         </group>
       </RigidBody>
 
-      {/* FIX: Mematikan Frustum Culling agar tali tidak hilang saat ditarik ke tepi */}
+      {/* FIX TALI HILANG SAAT DITARIK: frustumCulled={false} adalah kuncinya */}
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
         <meshLineMaterial

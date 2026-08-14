@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, Lock } from 'lucide-react';
 import { getProfile, getProjects, getAchievements, getGallery } from '../data';
+import { Link } from 'react-router-dom';
 import Lanyard from '../components/Lanyard'; 
 
 export default function MainPortfolio() {
@@ -35,6 +36,8 @@ export default function MainPortfolio() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="min-h-screen">
+      
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full glass-panel z-50 py-4 px-6 md:px-12 flex justify-between items-center">
         <div className="font-mono text-primary-green font-bold text-xl tracking-wider">IMAM.dev</div>
         <div className="hidden md:flex gap-6 text-sm font-semibold items-center">
@@ -42,15 +45,17 @@ export default function MainPortfolio() {
           <a href="#projects" className="hover:text-primary-green transition">Portfolio</a>
           <a href="#achievements" className="hover:text-primary-green transition">Prestasi</a>
           <a href="#gallery" className="hover:text-primary-green transition">Galeri</a>
+          <a href="#contact" className="hover:text-primary-green transition">Hubungi</a>
           
-          {/* FIX: Menggunakan tag <a> biasa agar memaksa pindah halaman (Hard Navigation) */}
-          <a href="/admin" className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30">
+          {/* FIX ROUTING: Menggunakan Link dari react-router-dom untuk SPA navigation */}
+          <Link to="/admin" className="flex items-center gap-1.5 text-text-muted hover:text-white transition bg-primary-green/10 px-3 py-1.5 rounded border border-primary-green/30">
             <Lock size={14}/> Admin Mode
-          </a>
+          </Link>
         </div>
       </nav>
 
-      <section id="about" className="pt-32 pb-20 px-6 sm:px-12 max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+      {/* HERO SECTION (Foto Profil Kotak Hitam Putih) */}
+      <section id="about" className="pt-32 pb-20 px-6 sm:px-12 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12">
         <div className="flex-1 space-y-6 z-20">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight">{profile.name}</h1>
           <h2 className="text-2xl font-mono text-primary-green">{profile.role}</h2>
@@ -72,27 +77,20 @@ export default function MainPortfolio() {
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
               </a>
             )}
-            {profile.email && (
-              <a href={`mailto:${profile.email}`} className="p-3 glass-panel rounded-full hover:bg-primary-green hover:text-white transition">
-                <svg className="w-5 h-5 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              </a>
-            )}
           </div>
         </div>
 
-        {/* AREA LANYARD 3D / ID CARD HACKER */}
-        <div className="flex-1 w-full flex flex-col items-center gap-6 relative">
-          <div className="w-full h-[450px] sm:h-[550px] relative shrink-0">
-             <Lanyard position={[0, 0, 20]} gravity={[0, -40, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
-          </div>
-          
-          <div className="w-full max-w-sm glass-panel rounded-xl p-4 shadow-lg font-mono text-xs text-left z-20 -mt-10">
-            <div className="flex items-center gap-2 mb-2 border-b border-primary-green/20 pb-2">
-              <Terminal size={14} className="text-primary-green"/>
-              <span className="text-primary-green">system_status.sh</span>
-            </div>
-            <p className="text-green-400">&gt; Status: Online & Ready</p>
-            <p className="text-text-muted">&gt; Location: Yogyakarta, Indonesia</p>
+        {/* FOTO PROFIL KOTAK & HITAM PUTIH */}
+        <div className="flex-1 w-full flex justify-center md:justify-end">
+          <div className="relative w-64 h-80 md:w-80 md:h-96 shadow-2xl border-4 border-primary-green/20">
+            <img 
+              src={profile.avatar} 
+              alt="Profile" 
+              className="w-full h-full object-cover grayscale"
+            />
+            {/* Aksen sudut ala tech */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary-green"></div>
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary-green"></div>
           </div>
         </div>
       </section>
@@ -132,7 +130,7 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      <section id="gallery" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10 mb-20">
+      <section id="gallery" className="py-16 px-6 sm:px-12 max-w-6xl mx-auto border-t border-primary-green/10">
         <h2 className="text-3xl font-bold mb-10 text-center tracking-wide">GALERI & DOKUMENTASI</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {gallery.map((photo) => (
@@ -145,6 +143,25 @@ export default function MainPortfolio() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* SEKSI HUBUNGI (BACKGROUND PUTIH & LANYARD 3D) */}
+      <section id="contact" className="w-full bg-[#f8fafc] text-black py-20 relative overflow-hidden mt-12">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col items-center z-20 relative">
+          <h2 className="text-4xl font-black mb-4 tracking-wide text-slate-900">HUBUNGI SAYA</h2>
+          <p className="text-slate-600 mb-8 text-center max-w-md font-medium">
+            Tertarik untuk berkolaborasi dalam proyek inovasi mekatronika dan IoT? Tarik kartu ID saya di bawah ini!
+          </p>
+          
+          <div className="w-full h-[550px] relative">
+             {/* Komponen Lanyard sekarang berada di area putih */}
+             <Lanyard position={[0, 0, 20]} gravity={[0, -40, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
+          </div>
+
+          <a href={`mailto:${profile.email}`} className="mt-8 bg-primary-green text-black font-bold px-8 py-3 rounded-full hover:bg-emerald-400 transition transform hover:scale-105 shadow-lg border-2 border-transparent hover:border-slate-900">
+            Kirim Email
+          </a>
         </div>
       </section>
     </motion.div>
