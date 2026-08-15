@@ -4,7 +4,6 @@ import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, 
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-// Import Firebase (Menyesuaikan dengan struktur file Anda di src/firebase.js)
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -13,6 +12,7 @@ export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
+  const [isSaving, setIsSaving] = useState(false);
 
   // State Data
   const [profile, setProfile] = useState({ name: '', role: '', bio: '', email: '', linkedin: '', github: '', avatar: '' });
@@ -21,7 +21,6 @@ export default function AdminPanel() {
   const [gallery, setGallery] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Cek Status Login & Ambil Data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -37,23 +36,19 @@ export default function AdminPanel() {
 
   const fetchAllData = async () => {
     try {
-      // Fetch Profile
       const profileSnap = await getDoc(doc(db, "portfolio", "profile"));
       if (profileSnap.exists()) setProfile(profileSnap.data());
 
-      // Fetch Projects
       const projectSnap = await getDocs(collection(db, "projects"));
       setProjects(projectSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-      // Fetch Achievements
       const achSnap = await getDocs(collection(db, "achievements"));
       setAchievements(achSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-      // Fetch Gallery
       const galSnap = await getDocs(collection(db, "gallery"));
       setGallery(galSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      toast.error("Gagal menarik data dari database.");
+      toast.error("Gagal menarik data. Pastikan Firestore sudah aktif!");
       console.error(error);
     }
   };
@@ -64,7 +59,7 @@ export default function AdminPanel() {
       await signInWithPopup(auth, googleProvider);
       toast.success("Login berhasil!");
     } catch (error) {
-      toast.error("Gagal login dengan Google.");
+      toast.error(`Gagal login: ${error.message}`);
     }
   };
 
@@ -78,41 +73,53 @@ export default function AdminPanel() {
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "portfolio_imam");
     
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "aj1qdylv";
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData
       });
       const data = await res.json();
       setIsUploading(false);
-      return data.secure_url;
+      
+      if (data.secure_url) {
+        return data.secure_url;
+      } else {
+        toast.error("Cloudinary Error: Periksa nama/preset Anda.");
+        return null;
+      }
     } catch (error) {
       setIsUploading(false);
-      toast.error("Gagal mengunggah gambar.");
+      toast.error("Gagal menghubungi server Cloudinary.");
       return null;
     }
   };
 
   // --- HANDLER PROFIL ---
   const handleSaveProfile = async () => {
+    setIsSaving(true);
     try {
       await setDoc(doc(db, "portfolio", "profile"), profile);
-      toast.success("Profil berhasil disimpan!");
+      toast.success("Profil berhasil disimpan di Firebase!");
     } catch (error) {
-      toast.error("Gagal menyimpan profil.");
+      toast.error(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleProfileImage = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast.loading("Mengunggah foto...", { id: 'upload' });
+    toast.loading("Mengunggah foto ke Cloudinary...", { id: 'upload' });
     const url = await uploadToCloudinary(file);
     if (url) {
       setProfile({ ...profile, avatar: url });
       toast.success("Foto berhasil diunggah!", { id: 'upload' });
+    } else {
+      toast.dismiss('upload');
     }
   };
 
@@ -122,19 +129,22 @@ export default function AdminPanel() {
   };
 
   const handleSaveProject = async (proj) => {
+    setIsSaving(true);
     try {
       if (proj.isNew) {
         const { isNew, tempId, ...dataToSave } = proj;
         const docRef = await addDoc(collection(db, "projects"), dataToSave);
         setProjects(projects.map(p => p.tempId === proj.tempId ? { ...dataToSave, id: docRef.id } : p));
-        toast.success("Project baru ditambahkan!");
+        toast.success("Project baru disimpan ke Firebase!");
       } else {
         const { id, ...dataToUpdate } = proj;
         await updateDoc(doc(db, "projects", id), dataToUpdate);
         toast.success("Project diperbarui!");
       }
     } catch (error) {
-      toast.error("Gagal menyimpan project.");
+      toast.error(`Gagal simpan project: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -147,7 +157,7 @@ export default function AdminPanel() {
       try {
         await deleteDoc(doc(db, "projects", id));
         setProjects(projects.filter(p => p.id !== id));
-        toast.success("Project dihapus.");
+        toast.success("Project dihapus dari Firebase.");
       } catch (error) {
         toast.error("Gagal menghapus project.");
       }
@@ -157,11 +167,13 @@ export default function AdminPanel() {
   const handleProjectImage = async (e, projId, tempId) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast.loading("Mengunggah gambar...", { id: 'proj-img' });
+    toast.loading("Mengunggah gambar project...", { id: 'proj-img' });
     const url = await uploadToCloudinary(file);
     if (url) {
       setProjects(projects.map(p => (p.id === projId || p.tempId === tempId) ? { ...p, image: url } : p));
       toast.success("Gambar terunggah!", { id: 'proj-img' });
+    } else {
+      toast.dismiss('proj-img');
     }
   };
 
@@ -171,19 +183,22 @@ export default function AdminPanel() {
   };
 
   const handleSaveAchievement = async (ach) => {
+    setIsSaving(true);
     try {
       if (ach.isNew) {
         const { isNew, tempId, ...dataToSave } = ach;
         const docRef = await addDoc(collection(db, "achievements"), dataToSave);
         setAchievements(achievements.map(a => a.tempId === ach.tempId ? { ...dataToSave, id: docRef.id } : a));
-        toast.success("Prestasi ditambahkan!");
+        toast.success("Prestasi ditambahkan ke Firebase!");
       } else {
         const { id, ...dataToUpdate } = ach;
         await updateDoc(doc(db, "achievements", id), dataToUpdate);
         toast.success("Prestasi diperbarui!");
       }
     } catch (error) {
-      toast.error("Gagal menyimpan prestasi.");
+      toast.error(`Gagal simpan prestasi: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -205,6 +220,7 @@ export default function AdminPanel() {
   };
 
   const handleSaveGallery = async (gal) => {
+    setIsSaving(true);
     try {
       if (gal.isNew) {
         const { isNew, tempId, ...dataToSave } = gal;
@@ -217,7 +233,9 @@ export default function AdminPanel() {
         toast.success("Galeri diperbarui!");
       }
     } catch (error) {
-      toast.error("Gagal menyimpan galeri.");
+      toast.error(`Gagal simpan galeri: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -229,18 +247,20 @@ export default function AdminPanel() {
     if (window.confirm("Hapus foto galeri ini?")) {
       await deleteDoc(doc(db, "gallery", id));
       setGallery(gallery.filter(g => g.id !== id));
-      toast.success("Foto dihapus.");
+      toast.success("Foto dihapus dari Firebase.");
     }
   };
 
   const handleGalleryImage = async (e, galId, tempId) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast.loading("Mengunggah foto...", { id: 'gal-img' });
+    toast.loading("Mengunggah foto ke Cloudinary...", { id: 'gal-img' });
     const url = await uploadToCloudinary(file);
     if (url) {
       setGallery(gallery.map(g => (g.id === galId || g.tempId === tempId) ? { ...g, url: url } : g));
       toast.success("Foto terunggah!", { id: 'gal-img' });
+    } else {
+      toast.dismiss('gal-img');
     }
   };
 
@@ -258,7 +278,7 @@ export default function AdminPanel() {
             <svg viewBox="0 0 24 24" width="36" height="36" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)"><path fill="#4285F4" d="M -3.264,51.509 C -3.264,50.719 -3.334,49.969 -3.454,49.239 L -14.754,49.239 L -14.754,53.749 L -8.284,53.749 C -8.574,55.229 -9.424,56.479 -10.684,57.329 L -10.684,60.329 L -6.824,60.329 C -4.564,58.239 -3.264,55.159 -3.264,51.509 z"/><path fill="#34A853" d="M -14.754,63.239 C -11.514,63.239 -8.804,62.159 -6.824,60.329 L -10.684,57.329 C -11.764,58.049 -13.134,58.489 -14.754,58.489 C -17.884,58.489 -20.534,56.379 -21.484,53.529 L -25.464,53.529 L -25.464,56.619 C -23.494,60.539 -19.444,63.239 -14.754,63.239 z"/><path fill="#FBBC05" d="M -21.484,53.529 C -21.734,52.809 -21.864,52.039 -21.864,51.239 C -21.864,50.439 -21.724,49.669 -21.484,48.949 L -21.484,45.859 L -25.464,45.859 C -26.284,47.479 -26.754,49.299 -26.754,51.239 C -26.754,53.179 -26.284,54.999 -25.464,56.619 L -21.484,53.529 z"/><path fill="#EA4335" d="M -14.754,43.989 C -12.984,43.989 -11.404,44.599 -10.154,45.789 L -6.734,41.939 C -8.804,39.869 -11.514,38.739 -14.754,38.739 C -19.444,38.739 -23.494,41.439 -25.464,45.859 L -21.484,48.949 C -20.534,46.099 -17.884,43.989 -14.754,43.989 z"/></g></svg>
           </div>
           <h1 className="text-3xl font-black text-white mb-2 tracking-wide">Admin Access</h1>
-          <p className="text-slate-400 mb-8 text-sm">Masuk untuk memperbarui konten portofolio Anda.</p>
+          <p className="text-slate-400 mb-8 text-sm">Pastikan Firestore & Cloudinary sudah dikonfigurasi.</p>
           <button onClick={handleLogin} className="w-full bg-white hover:bg-slate-100 text-slate-800 font-bold tracking-wide py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg">
             Lanjutkan dengan Google
           </button>
@@ -304,13 +324,13 @@ export default function AdminPanel() {
       <main className="flex-1 p-6 md:p-10 h-screen overflow-y-auto pb-32">
         <div className="max-w-4xl mx-auto">
           
-          {/* ================= TAB PROFILE ================= */}
+          {/* TAB PROFILE */}
           {activeTab === 'profile' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-black text-slate-800">Edit Profil Utama</h2>
-                <button onClick={handleSaveProfile} className="bg-[#10b981] hover:bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-colors">
-                  <Save size={18} /> Simpan Perubahan
+                <button onClick={handleSaveProfile} disabled={isSaving} className="bg-[#10b981] hover:bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-colors disabled:opacity-50">
+                  {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />} Simpan ke Firebase
                 </button>
               </div>
 
@@ -324,7 +344,7 @@ export default function AdminPanel() {
                     <div>
                       <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-colors">
                         {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />} 
-                        Upload Foto Baru
+                        Upload ke Cloudinary
                         <input type="file" className="hidden" accept="image/*" onChange={handleProfileImage} disabled={isUploading} />
                       </label>
                     </div>
@@ -365,7 +385,7 @@ export default function AdminPanel() {
             </motion.div>
           )}
 
-          {/* ================= TAB PROJECTS ================= */}
+          {/* TAB PROJECTS */}
           {activeTab === 'projects' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex justify-between items-center mb-8">
@@ -374,6 +394,8 @@ export default function AdminPanel() {
                   <Plus size={18} /> Tambah Project
                 </button>
               </div>
+
+              {projects.length === 0 && <p className="text-slate-500 text-center py-10">Belum ada project. Silakan tambah baru.</p>}
 
               {projects.map((proj) => (
                 <div key={proj.id || proj.tempId} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-6 relative">
@@ -393,7 +415,7 @@ export default function AdminPanel() {
                   </div>
 
                   <div className="flex md:flex-col gap-3 justify-start items-center md:border-l border-slate-100 md:pl-4">
-                    <button onClick={() => handleSaveProject(proj)} className="bg-[#10b981] hover:bg-emerald-600 text-white p-2.5 rounded-lg shadow transition-colors"><Save size={18}/></button>
+                    <button onClick={() => handleSaveProject(proj)} disabled={isSaving} className="bg-[#10b981] hover:bg-emerald-600 text-white p-2.5 rounded-lg shadow transition-colors disabled:opacity-50"><Save size={18}/></button>
                     <button onClick={() => handleDeleteProject(proj.id, proj.tempId)} className="bg-rose-100 hover:bg-rose-200 text-rose-600 p-2.5 rounded-lg transition-colors"><Trash2 size={18}/></button>
                   </div>
                 </div>
@@ -401,7 +423,7 @@ export default function AdminPanel() {
             </motion.div>
           )}
 
-          {/* ================= TAB PRESTASI ================= */}
+          {/* TAB PRESTASI */}
           {activeTab === 'achievements' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex justify-between items-center mb-8">
@@ -410,6 +432,8 @@ export default function AdminPanel() {
                   <Plus size={18} /> Tambah Prestasi
                 </button>
               </div>
+
+              {achievements.length === 0 && <p className="text-slate-500 text-center py-10">Belum ada data prestasi.</p>}
 
               {achievements.map((ach) => (
                 <div key={ach.id || ach.tempId} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-4 flex gap-4 items-start">
@@ -421,7 +445,7 @@ export default function AdminPanel() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <button onClick={() => handleSaveAchievement(ach)} className="bg-[#10b981] hover:bg-emerald-600 text-white p-2 rounded-lg shadow transition-colors"><Save size={16}/></button>
+                    <button onClick={() => handleSaveAchievement(ach)} disabled={isSaving} className="bg-[#10b981] hover:bg-emerald-600 text-white p-2 rounded-lg shadow transition-colors disabled:opacity-50"><Save size={16}/></button>
                     <button onClick={() => handleDeleteAchievement(ach.id, ach.tempId)} className="bg-rose-100 hover:bg-rose-200 text-rose-600 p-2 rounded-lg transition-colors"><Trash2 size={16}/></button>
                   </div>
                 </div>
@@ -429,7 +453,7 @@ export default function AdminPanel() {
             </motion.div>
           )}
 
-          {/* ================= TAB GALLERY ================= */}
+          {/* TAB GALLERY */}
           {activeTab === 'gallery' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex justify-between items-center mb-8">
@@ -438,6 +462,8 @@ export default function AdminPanel() {
                   <Plus size={18} /> Tambah Foto
                 </button>
               </div>
+
+              {gallery.length === 0 && <p className="text-slate-500 text-center py-10">Galeri masih kosong.</p>}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {gallery.map((gal) => (
@@ -454,7 +480,7 @@ export default function AdminPanel() {
                     
                     <div className="flex justify-end gap-2 mt-auto">
                       <button onClick={() => handleDeleteGallery(gal.id, gal.tempId)} className="bg-rose-100 hover:bg-rose-200 text-rose-600 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 text-sm"><Trash2 size={14}/> Hapus</button>
-                      <button onClick={() => handleSaveGallery(gal)} className="bg-[#10b981] hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg shadow transition-colors flex items-center gap-1 text-sm font-bold"><Save size={14}/> Simpan</button>
+                      <button onClick={() => handleSaveGallery(gal)} disabled={isSaving} className="bg-[#10b981] hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg shadow transition-colors flex items-center gap-1 text-sm font-bold disabled:opacity-50"><Save size={14}/> Simpan</button>
                     </div>
                   </div>
                 ))}
