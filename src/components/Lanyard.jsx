@@ -5,19 +5,19 @@ import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphe
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-// MEMANGGIL FILE GLB ASLI ANDA
-import cardGLB from './card.glb';
+// Memanggil file GLB Umbrella dan tekstur tali
+import umbrellaGLB from './umbrella.glb';
 import lanyard from './lanyard.svg';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 const BLANK_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-export default function Lanyard({ position = [0, 0, 15], gravity = [0, -40, 0], fov = 20, frontImage = null, backImage = null }) {
+export default function Lanyard({ position = [0, 0, 15], gravity = [0, -40, 0], fov = 20, frontImage = null }) {
   return (
     <Canvas camera={{ position: position, fov: fov }} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
       <ambientLight intensity={Math.PI} />
       <Physics gravity={gravity} timeStep={1/60}>
-        <Band frontImage={frontImage} backImage={backImage} />
+        <Band frontImage={frontImage} />
       </Physics>
       <Environment blur={0.75}>
         <Lightformer intensity={2} color="white" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, 0.1, 1]} />
@@ -29,46 +29,45 @@ export default function Lanyard({ position = [0, 0, 15], gravity = [0, -40, 0], 
   );
 }
 
-function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = null }) {
+function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
 
-  // MENGAMBIL OBJEK DARI FILE card.glb ASLI ANDA
-  const { nodes, materials } = useGLTF(cardGLB);
+  // Mengambil scene 3D dari model Umbrella Resident Evil
+  const { scene } = useGLTF(umbrellaGLB);
   
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
-  const backTex = useTexture(backImage || BLANK_PIXEL);
 
-  const createCoverTexture = (baseTex) => {
+  // Membentuk rasio foto agar pas menjadi stiker ID
+  const createStickerTexture = (baseTex) => {
     if (!baseTex || !baseTex.image) return baseTex;
     const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 720;
+    canvas.width = 400; canvas.height = 500;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 512, 720);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 400, 500);
     const img = baseTex.image;
-    const scale = Math.max(512 / img.width, 720 / img.height);
+    const scale = Math.max(400 / img.width, 500 / img.height);
     const dw = img.width * scale; const dh = img.height * scale;
-    const dx = (512 - dw) / 2; const dy = (720 - dh) / 2;
+    const dx = (400 - dw) / 2; const dy = (500 - dh) / 2;
     ctx.drawImage(img, dx, dy, dw, dh);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace; return tex;
   };
 
-  const frontMap = useMemo(() => createCoverTexture(frontTex), [frontTex]);
-  const backMap = useMemo(() => createCoverTexture(backTex), [backTex]);
+  const frontMap = useMemo(() => createStickerTexture(frontTex), [frontTex]);
   const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
-  // FIX TALI KEPANJANGAN: Memendekkan jarak antar sendi menjadi 0.5
+  // Fisika Tali
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 0.5]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 0.5]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 0.5]);
   
-  // FIX TALI PUTUS & KARTU TERBANG: Menempelkan ujung tali tepat ke koordinat Y: 0.9 (sesuai skala baru)
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 0.9, 0]]);
+  // Titik gantung tali ditarik ke atas (Y: 2.2) agar pas di lubang jepitan Umbrella
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 2.2, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -89,10 +88,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
 
-      // Menyambung titik 0 tali mutlak ke ujung kartu
+      // Menyambung titik tali ke penjepit kartu
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      const offset = new THREE.Vector3(0, 0.9, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      const offset = new THREE.Vector3(0, 2.2, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
@@ -115,10 +114,10 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        <CuboidCollider args={[0.8, 1.125, 0.01]} />
+        <CuboidCollider args={[1, 1.8, 0.1]} />
         <group
-          scale={1.5} // FIX: MENGECILKAN UKURAN KARTU
-          position={[0, -0.8, -0.05]}
+          scale={0.5} // Menyesuaikan skala model asli Umbrella
+          position={[0, -1, 0]}
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -127,18 +126,15 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null, backImage = nul
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* RENDER MODEL ASLI DARI CARD.GLB ANDA */}
-          {nodes?.card?.geometry && (
-            <mesh geometry={nodes.card.geometry}>
-              <meshPhysicalMaterial map={frontMap} clearcoat={1} clearcoatRoughness={0.15} roughness={0.8} metalness={0.2} />
-            </mesh>
-          )}
-          {nodes?.clip?.geometry && materials?.metal && (
-            <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
-          )}
-          {nodes?.clamp?.geometry && materials?.metal && (
-            <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
-          )}
+          {/* MENGGUNAKAN MODEL UMBRELLA SECARA UTUH */}
+          <primitive object={scene} />
+
+          {/* STIKER FOTO PROFIL ANDA (Ditempel di permukaan depan) */}
+          <mesh position={[0, -0.2, 0.2]} rotation={[0, 0, 0]}>
+             <planeGeometry args={[2.2, 2.8]} /> 
+             <meshPhysicalMaterial map={frontMap} roughness={0.3} clearcoat={1} clearcoatRoughness={0.1} />
+          </mesh>
+
         </group>
       </RigidBody>
       
