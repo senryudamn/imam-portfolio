@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, Lock, ArrowUpRight } from 'lucide-react';
-// FIX: Menggunakan fungsi fetch* dari data.js yang baru
+import { Terminal, Lock, ArrowUpRight, Send } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
@@ -14,7 +13,6 @@ export default function MainPortfolio() {
   const [gallery, setGallery] = useState([]);
 
   useEffect(() => {
-    // FIX: Mengambil data secara asynchronous dari Firebase
     const loadData = async () => {
       try {
         const profileData = await fetchProfile();
@@ -29,16 +27,22 @@ export default function MainPortfolio() {
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
-        setTimeout(() => setLoading(false), 800); // Sedikit jeda agar loading text terlihat rapi
+        setTimeout(() => setLoading(false), 800);
       }
     };
-
     loadData();
   }, []);
 
   const forceGoToAdmin = (e) => {
     e.preventDefault();
     window.location.href = '/admin';
+  };
+
+  // Simulasi kirim pesan
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    alert("Pesan Anda telah terkirim! (Ini adalah simulasi tampilan)");
+    e.target.reset();
   };
 
   if (loading) {
@@ -77,7 +81,6 @@ export default function MainPortfolio() {
       <section id="about" className="pt-40 pb-20 px-6 sm:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
         <div className="flex-1 space-y-6">
           <p className="text-sm font-bold tracking-widest uppercase text-slate-500 mb-2">Based in Yogyakarta, Indonesia</p>
-          
           <div className="h-auto md:h-[180px]">
             <FoldText
               text={`Hi, I'm ${profile.name?.split(' ')[0] || "Imam"}.\n${profile.role || "Mechatronics Engineer"}`}
@@ -91,23 +94,15 @@ export default function MainPortfolio() {
               color="#0f172a"
             />
           </div>
-          
           <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">{profile.bio}</p>
-
           <div className="flex gap-4 pt-6">
             <a href="#projects" className="bg-[#10b981] text-white font-bold px-8 py-3.5 rounded-full hover:bg-emerald-600 transition shadow-lg shadow-emerald-500/30">View Work</a>
             <a href="#contact" className="bg-white text-slate-900 border border-slate-200 font-bold px-8 py-3.5 rounded-full hover:bg-slate-50 transition">Let's Talk</a>
           </div>
         </div>
-
-        {/* FOTO PROFIL KOTAK & HITAM PUTIH */}
         <div className="flex-1 flex justify-center lg:justify-end">
           <div className="w-72 h-96 relative bg-slate-200 p-2 shadow-2xl">
-            <img 
-              src={profile.avatar} 
-              alt="Profile" 
-              className="w-full h-full object-cover grayscale border border-slate-300"
-            />
+            <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover grayscale border border-slate-300" />
             <div className="absolute -bottom-4 -left-4 bg-white p-3 shadow-lg border border-slate-100 flex items-center gap-2">
               <div className="w-2 h-2 bg-[#10b981] rounded-full animate-pulse"></div>
               <span className="text-xs font-bold font-mono">AVAILABLE FOR WORK</span>
@@ -130,7 +125,6 @@ export default function MainPortfolio() {
           <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Selected Projects</h2>
           <p className="text-slate-500 font-medium">Things I've built and shipped.</p>
         </div>
-        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {projects.map((proj) => (
             <motion.div whileHover={{ y: -8 }} key={proj.id} className="bg-white border border-slate-200 p-6 flex flex-col group shadow-sm hover:shadow-xl transition-all duration-300">
@@ -173,26 +167,72 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* CONTACT & LANYARD SECTION PADA BAGIAN PALING BAWAH */}
-      <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col items-center z-20 relative text-center">
-          <h2 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter">Let's Work <br/><span className="text-[#10b981]">Together</span></h2>
-          <p className="text-slate-400 text-lg mb-10 max-w-md">
-            Reach out via email or drag the ID card below to connect!
-          </p>
+      {/* CONTACT & LANYARD SECTION (TATA LETAK KIRI KANAN) */}
+      <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
+        <div className="max-w-7xl mx-auto px-6 z-20 relative">
           
-          <div className="w-full h-[500px] relative -mt-8 mb-12 cursor-grab active:cursor-grabbing">
-             <Lanyard position={[0, 0, 12]} gravity={[0, -30, 0]} frontImage={profile.avatar} backImage={profile.avatar} />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* BAGIAN KIRI: Lanyard 3D */}
+            <div className="w-full h-[600px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/30 rounded-3xl border border-white/5">
+               <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} frontImage={profile.avatar} />
+               <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">
+                 &lt; Drag ID Card /&gt;
+               </p>
+            </div>
 
-          <a href={`mailto:${profile.email}`} className="bg-[#10b981] text-white font-black text-xl px-12 py-5 rounded-full hover:bg-emerald-400 transition shadow-2xl z-20 relative -mt-16 border-4 border-[#0f172a]">
-            {profile.email || "Email Me"}
-          </a>
+            {/* BAGIAN KANAN: Formulir Chat/Pesan & Teks */}
+            <div className="flex flex-col justify-center">
+              <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">Let's Work <br/><span className="text-[#10b981]">Together</span></h2>
+              <p className="text-slate-400 text-lg mb-10 max-w-md">
+                Punya ide proyek atau pertanyaan? Kirim pesan langsung melalui form di bawah ini.
+              </p>
 
-          <div className="flex gap-6 mt-16 text-slate-400 font-semibold tracking-widest text-sm uppercase">
-            {profile.linkedin && <a href={profile.linkedin} className="hover:text-white transition">LinkedIn</a>}
-            {profile.github && <a href={profile.github} className="hover:text-white transition">GitHub</a>}
-            {profile.instagram && <a href={profile.instagram} className="hover:text-white transition">Instagram</a>}
+              {/* FORMULIR CHAT */}
+              <form onSubmit={handleSendMessage} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-300 mb-2 pl-1">Nama</label>
+                    <input 
+                      type="text" 
+                      placeholder="Masukkan nama" 
+                      className="w-full bg-[#1e293b] border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-300 mb-2 pl-1">Email</label>
+                    <input 
+                      type="email" 
+                      placeholder="Masukkan email" 
+                      className="w-full bg-[#1e293b] border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
+                      required 
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-300 mb-2 pl-1">Pesan / Chat</label>
+                  <textarea 
+                    rows="4" 
+                    placeholder="Halo Imam, saya tertarik untuk..." 
+                    className="w-full bg-[#1e293b] border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all resize-none" 
+                    required
+                  ></textarea>
+                </div>
+                
+                <button type="submit" className="bg-[#10b981] text-white font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 w-full sm:w-auto">
+                  <Send size={20} /> Kirim Pesan
+                </button>
+              </form>
+
+              {/* SOCIAL MEDIA LINKS */}
+              <div className="flex gap-6 mt-12 text-slate-400 font-semibold tracking-widest text-sm uppercase pt-8 border-t border-slate-800">
+                {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer" className="hover:text-white transition">LinkedIn</a>}
+                {profile.github && <a href={profile.github} target="_blank" rel="noreferrer" className="hover:text-white transition">GitHub</a>}
+                {profile.email && <a href={`mailto:${profile.email}`} className="hover:text-white transition">Email</a>}
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
