@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState, useEffect } from 'react';
 import { gsap } from 'gsap';
 import './StaggeredMenu.css';
 
@@ -10,13 +10,13 @@ export const StaggeredMenu = ({
   displaySocials = true,
   displayItemNumbering = true,
   className,
-  menuButtonColor = '#fff',
-  openMenuButtonColor = '#fff',
-  accentColor = '#5227FF',
+  menuButtonColor = '#0f172a',
+  openMenuButtonColor = '#10b981',
+  accentColor = '#10b981',
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
-  darkMode = false, // <-- MENERIMA STATUS DARK MODE
+  darkMode = false, // Menerima trigger Mode Gelap dari MainPortfolio
   onMenuOpen,
   onMenuClose
 }) => {
@@ -66,10 +66,11 @@ export const StaggeredMenu = ({
       gsap.set(plusV, { transformOrigin: '50% 50%', rotate: 90 });
       gsap.set(icon, { rotate: 0, transformOrigin: '50% 50%' });
       gsap.set(textInner, { yPercent: 0 });
+      
       if (toggleBtnRef.current) gsap.set(toggleBtnRef.current, { color: menuButtonColor });
     });
     return () => ctx.revert();
-  }, [menuButtonColor, position]);
+  }, [position, menuButtonColor]);
 
   const buildOpenTimeline = useCallback(() => {
     const panel = panelRef.current;
@@ -181,7 +182,7 @@ export const StaggeredMenu = ({
 
     openTlRef.current = tl;
     return tl;
-  }, []);
+  }, [position]);
 
   const playOpen = useCallback(() => {
     if (busyRef.current) return;
@@ -263,14 +264,11 @@ export const StaggeredMenu = ({
     [openMenuButtonColor, menuButtonColor, changeMenuColorOnOpen]
   );
 
-  React.useEffect(() => {
+  // Efek ini memastikan GSAP memperbarui warna tombol menu secara instan saat Dark Mode diklik
+  useEffect(() => {
     if (toggleBtnRef.current) {
-      if (changeMenuColorOnOpen) {
-        const targetColor = openRef.current ? openMenuButtonColor : menuButtonColor;
-        gsap.set(toggleBtnRef.current, { color: targetColor });
-      } else {
-        gsap.set(toggleBtnRef.current, { color: menuButtonColor });
-      }
+      const targetColor = openRef.current && changeMenuColorOnOpen ? openMenuButtonColor : menuButtonColor;
+      gsap.to(toggleBtnRef.current, { color: targetColor, duration: 0.3 });
     }
   }, [changeMenuColorOnOpen, menuButtonColor, openMenuButtonColor]);
 
@@ -330,7 +328,7 @@ export const StaggeredMenu = ({
     }
   }, [playClose, animateIcon, animateColor, animateText, onMenuClose]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!closeOnClickAway || !open) return;
 
     const handleClickOutside = event => {
@@ -359,14 +357,15 @@ export const StaggeredMenu = ({
     >
       
       {/* SUNTIKAN CSS MUTLAK UNTUK DARK MODE */}
-      {/* Ini akan otomatis mengubah seluruh warna menu panel tanpa perlu mengedit file CSS lagi! */}
       <style>{`
         .staggered-menu-panel {
           background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
           border-left: 1px solid ${darkMode ? '#1e293b' : '#f1f5f9'} !important;
+          transition: background-color 0.3s ease, border-color 0.3s ease !important;
         }
         .sm-panel-item {
           color: ${darkMode ? '#f8fafc' : '#0f172a'} !important;
+          transition: color 0.3s ease !important;
         }
         .sm-panel-item:hover {
           color: ${accentColor} !important;
@@ -376,6 +375,7 @@ export const StaggeredMenu = ({
         }
         .sm-socials-link {
           color: ${darkMode ? '#94a3b8' : '#475569'} !important;
+          transition: color 0.3s ease !important;
         }
         .sm-socials-link:hover {
           color: ${accentColor} !important;
@@ -388,13 +388,15 @@ export const StaggeredMenu = ({
 
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
-          const raw = colors && colors.length ? colors.slice(0, 4) : ['#1e1e22', '#35353c'];
+          // Warna animasi transisi GSAP juga disinkronkan secara mulus
+          const activeColors = colors && colors.length ? colors : (darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']);
+          const raw = activeColors.slice(0, 4);
           let arr = [...raw];
           if (arr.length >= 3) {
             const mid = Math.floor(arr.length / 2);
             arr.splice(mid, 1);
           }
-          return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />);
+          return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c, transition: 'background 0.3s ease' }} />);
         })()}
       </div>
 
@@ -416,7 +418,7 @@ export const StaggeredMenu = ({
           pointerEvents: 'auto',
           zIndex: 60,
           transition: 'background-color 0.3s ease, border-color 0.3s ease',
-          backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+          backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)',
           borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)'
         }}
       >
@@ -441,7 +443,7 @@ export const StaggeredMenu = ({
           aria-controls="staggered-menu-panel"
           onClick={toggleMenu}
           type="button"
-          style={{ padding: '0.5rem' }}
+          style={{ padding: '0.5rem', outline: 'none' }}
         >
           <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true">
             <span ref={textInnerRef} className="sm-toggle-textInner">
@@ -451,6 +453,7 @@ export const StaggeredMenu = ({
             </span>
           </span>
           <span ref={iconRef} className="sm-icon" aria-hidden="true">
+            {/* Ikon hamburger ini diatur agar mengikuti properti 'color' dari parent button yang dikendalikan GSAP */}
             <span ref={plusHRef} className="sm-icon-line" style={{ backgroundColor: 'currentColor' }}/>
             <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ backgroundColor: 'currentColor' }}/>
           </span>
@@ -463,7 +466,7 @@ export const StaggeredMenu = ({
             {items && items.length ? (
               items.map((it, idx) => (
                 <li className="sm-panel-itemWrap" key={it.label + idx}>
-                  <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1}>
+                  <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1} onClick={closeMenu}>
                     <span className="sm-panel-itemLabel">{it.label}</span>
                   </a>
                 </li>
@@ -493,11 +496,11 @@ export const StaggeredMenu = ({
               </div>
             )}
             
-            {/* Tombol Admin Mode yang warnanya beradaptasi */}
             <div style={{ 
               marginTop: '2rem', 
               paddingTop: '1.5rem',
               borderTop: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)', 
+              transition: 'border-color 0.3s ease'
             }}>
               <a 
                 href="/admin" 

@@ -105,7 +105,6 @@ export default function MainPortfolio() {
   ];
 
   return (
-    // Perhatikan penambahan dark:bg-[#0f172a] dan dark:text-slate-100
     <div className="min-h-screen bg-[#fcfcfc] dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-[#10b981] selection:text-white relative transition-colors duration-500">
       
       {/* TOMBOL TOGGLE DARK MODE */}
@@ -127,11 +126,11 @@ export default function MainPortfolio() {
         displaySocials={true}
         displayItemNumbering={true}
         isFixed={true}
-        darkMode={darkMode} // <-- MENGIRIM STATUS MODE GELAP KE MENU
+        darkMode={darkMode}
         menuButtonColor={darkMode ? "#10b981" : "#0f172a"} 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
-        colors={darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']} // <-- BLOK ANIMASI IKUT GELAP
+        colors={darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']}
         accentColor="#10b981" 
       />
 
@@ -140,7 +139,9 @@ export default function MainPortfolio() {
           <p className="text-sm font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400 mb-2">Based in Yogyakarta, Indonesia</p>
           
           <div className="h-auto md:h-[180px] w-full">
+            {/* FIX UTAMA ADA DI BARIS KEY INI: Memaksa react merender ulang animasi teks agar warnanya bisa berubah saat ganti mode */}
             <FoldText
+              key={darkMode ? 'dark' : 'light'} 
               text={`Hi, I'm ${firstName}.\n${role}`}
               splitBy="line"
               hinge="bottom"
@@ -149,7 +150,7 @@ export default function MainPortfolio() {
               stagger={0.2}
               fontSize={72}
               fontWeight={900}
-              color={darkMode ? "#ffffff" : "#0f172a"} // Warna teks fold adaptif
+              color={darkMode ? "#ffffff" : "#0f172a"}
             />
           </div>
 
@@ -160,9 +161,9 @@ export default function MainPortfolio() {
           </div>
         </div>
         <div className="flex-1 flex justify-center lg:justify-end">
-          <div className="w-72 h-96 relative bg-slate-200 dark:bg-slate-800 p-2 shadow-2xl">
-            <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover grayscale border border-slate-300 dark:border-slate-600" />
-            <div className="absolute -bottom-4 -left-4 bg-white dark:bg-[#1e293b] p-3 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+          <div className="w-72 h-96 relative bg-slate-200 dark:bg-slate-800 p-2 shadow-2xl rounded-2xl">
+            <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover grayscale border border-slate-300 dark:border-slate-600 rounded-xl" />
+            <div className="absolute -bottom-4 -left-4 bg-white dark:bg-[#1e293b] p-3 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-2 rounded-lg">
               <div className="w-2 h-2 bg-[#10b981] rounded-full animate-pulse"></div>
               <span className="text-xs font-bold font-mono dark:text-white">AVAILABLE FOR WORK</span>
             </div>
@@ -223,7 +224,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* Bagian Contact biarkan tetap tema gelap mutlak seperti sebelumnya agar Lanyard 3D terlihat keren */}
       <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
         <div className="max-w-7xl mx-auto px-6 z-20 relative">
           <div className="text-center mb-16">
