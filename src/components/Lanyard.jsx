@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
+import { useGLTF, useTexture, Environment, Lightformer, Center } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
 import umbrellaGLB from './umbrella.glb';
 import lanyard from './lanyard.png'; 
-import cardTexture from './texture.png'; 
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
@@ -33,30 +32,16 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   
-  const segmentProps = { type: 'dynamic', canSleep: false, colliders: false, angularDamping: 1, linearDamping: 1.5 };
+  // Damping dinaikkan sedikit agar kartu tidak berayun terlalu liar
+  const segmentProps = { type: 'dynamic', canSleep: false, colliders: false, angularDamping: 2, linearDamping: 2 };
 
   const { scene } = useGLTF(umbrellaGLB);
   const texture = useTexture(lanyard);
-  
-  const customTex = useTexture(cardTexture);
-  customTex.flipY = false; 
-  customTex.colorSpace = THREE.SRGBColorSpace;
 
-  useEffect(() => {
-    scene.traverse((child) => {
-      if (child.isMesh) {
-        child.material = new THREE.MeshStandardMaterial({
-          map: customTex,
-          roughness: 0.3,
-          metalness: 0.1
-        });
-      }
-    });
-  }, [scene, customTex]);
-
-  // FIX 2: Menambahkan 1 titik ekstra di kurva tali agar terhubung sempurna ke kartu
+  // FIX 1: Kurva tali dikurangi dari 5 titik menjadi 4 titik.
+  // Membuang titik j3 dari visual tali akan mencegah "bug melintir/terputus" saat kartu diayunkan.
   const [curve] = useState(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
+    new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
   ]));
   
   const [dragged, drag] = useState(false);
@@ -65,7 +50,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.2, 0]]);
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.15, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -80,8 +65,9 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z });
     }
     if (fixed.current && card.current && j3.current) {
-      // FIX 2: Sendi j3 sekarang ikut dihitung pergerakannya agar tali tidak putus
-      [j1, j2, j3].forEach(ref => {
+      
+      // FIX 1 (Lanjutan): Hanya menghitung pergerakan j1 dan j2 untuk visual tali
+      [j1, j2].forEach(ref => {
         if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation());
         const clampedDistance = Math.max(0.1, Math.min(1, ref.current.lerped.distanceTo(ref.current.translation())));
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
@@ -89,14 +75,13 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
 
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      const offset = new THREE.Vector3(0, 1.2, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      const offset = new THREE.Vector3(0, 1.15, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
-      // FIX 2: Menyambungkan 5 titik tali agar 100% menempel ke lubang jepitan besi
+      // Menyambung 4 titik secara berurutan: Kartu -> j2 -> j1 -> Atas
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
-      curve.points[1].copy(j3.current.lerped);
-      curve.points[2].copy(j2.current.lerped);
-      curve.points[3].copy(j1.current.lerped);
-      curve.points[4].copy(fixed.current.translation());
+      curve.points[1].copy(j2.current.lerped);
+      curve.points[2].copy(j1.current.lerped);
+      curve.points[3].copy(fixed.current.translation());
       band.current.geometry.setPoints(curve.getPoints(32));
       
       ang.copy(card.current.angvel()); rot.copy(card.current.rotation());
@@ -113,7 +98,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
-      <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={0.8} type={dragged ? 'kinematicPosition' : 'dynamic'}>
+      <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={2} type={dragged ? 'kinematicPosition' : 'dynamic'}>
         <CuboidCollider args={[0.8, 1.15, 0.05]} />
         <group
           onPointerOver={() => hover(true)}
@@ -124,9 +109,11 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* FIX 1: Membuang <Center> agar kartu tidak miring, lalu menggesernya secara manual menggunakan position=[x, y, z] */}
-          {/* Jika posisi kiri/kanannya masih kurang pas sedikit, Anda bisa ubah angka 0.07 menjadi angka lain */}
-          <primitive object={scene} scale={0.8} position={[0.07, -1.25, 0]} />
+          {/* FIX 2: Menggunakan <Center> murni TANPA offset posisi manual.
+              Ini menjamin kartu Anda berada 100% tepat di tengah sumbu tarikan fisika! */}
+          <Center>
+            <primitive object={scene} scale={0.8} />
+          </Center>
         </group>
       </RigidBody>
       
@@ -139,7 +126,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
           resolution={[size.width, size.height]} 
           useMap 
           map={texture} 
-          repeat={[-4, 1]} 
+          repeat={[-3, 1]} // Mengurangi pengulangan agar teks ENGINEER di tali Anda lebih terbaca
           lineWidth={3} 
         />
       </mesh>
