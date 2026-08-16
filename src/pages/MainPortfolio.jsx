@@ -5,6 +5,7 @@ import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '..
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
+import ScrollVelocity from '../components/ScrollVelocity'; // Import komponen baru
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -49,21 +50,20 @@ export default function MainPortfolio() {
   const [profile, setProfile] = useState({});
   const [projects, setProjects] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [gallery, setGallery] = useState([]); // Menampung data galeri
   
-  // STATE DARK MODE
+  // STATE DARK MODE (Default dari LocalStorage)
   const [darkMode, setDarkMode] = useState(false);
   
-  // STATE VIRTUAL ROUTING (Untuk memindah-mindah tampilan)
-  const [activeView, setActiveView] = useState('home'); // 'home', 'all-projects', 'detail'
+  // STATE VIRTUAL ROUTING
+  const [activeView, setActiveView] = useState('home'); 
   const [selectedProject, setSelectedProject] = useState(null);
 
-  // Inisialisasi Dark Mode
   useEffect(() => {
     const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
     setDarkMode(isDark);
   }, []);
 
-  // Terapkan Warna Latar Body
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -76,13 +76,13 @@ export default function MainPortfolio() {
     }
   }, [darkMode]);
 
-  // Fetch Data
   useEffect(() => {
     const loadData = async () => {
       try {
         setProfile(await fetchProfile());
         setProjects(await fetchProjects());
         setAchievements(await fetchAchievements());
+        setGallery(await fetchGallery()); // Eksekusi penarikan data galeri dari Firebase
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
@@ -92,7 +92,6 @@ export default function MainPortfolio() {
     loadData();
   }, []);
 
-  // SISTEM NAVIGASI VIRTUAL MENGGUNAKAN HASH URL
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -104,7 +103,6 @@ export default function MainPortfolio() {
         window.scrollTo(0, 0);
       } else {
         setActiveView('home');
-        // Memberi waktu React untuk me-mount komponen Home sebelum scroll ke seksi terkait
         setTimeout(() => {
           const el = document.getElementById(hash.replace('#', ''));
           if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -140,11 +138,11 @@ export default function MainPortfolio() {
   const firstName = profile.name ? profile.name.split(' ')[0] : 'imam';
   const role = profile.role || 'IoT & Automation';
 
-  // MENU ITEMS DIUBAH: Menu 'Projects' sekarang membuka tampilan '#projects-all'
   const menuItems = [
     { label: 'Home', ariaLabel: 'Go to home page', link: '#about' },
     { label: 'Projects', ariaLabel: 'View our projects', link: '#projects-all' },
     { label: 'Experience', ariaLabel: 'View my experience', link: '#achievements' },
+    { label: 'Gallery', ariaLabel: 'View photo gallery', link: '#gallery' }, // Link menuju galeri ditambahkan
     { label: 'Contact', ariaLabel: 'Get in touch', link: '#contact' }
   ];
 
@@ -172,7 +170,7 @@ export default function MainPortfolio() {
       className="border p-6 flex flex-col group shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl cursor-pointer"
     >
       <div style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9' }} className="h-64 overflow-hidden mb-6 relative rounded-xl transition-colors">
-        <img src={proj.image} alt={proj.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+        <img src={proj.image || (proj.images && proj.images[0])} alt={proj.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
       </div>
       <div className="flex-1 flex flex-col">
         <p className="text-[#10b981] font-bold text-xs uppercase tracking-widest mb-3">{proj.category}</p>
@@ -260,7 +258,7 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* PROJECTS PREVIEW (Hanya tampilkan maksimal 2 project terbaru) */}
+            {/* PROJECTS PREVIEW */}
             <section id="projects" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" style={{ backgroundColor: theme.sectionBg, borderColor: theme.cardBorder, transition: 'background-color 0.3s ease' }}>
               <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -296,6 +294,47 @@ export default function MainPortfolio() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            {/* GALLERY SECTION DENGAN EFEK SCROLL VELOCITY */}
+            <section id="gallery" className="py-24 border-t overflow-hidden" style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}>
+              <div className="mb-16">
+                <ScrollVelocity
+                  texts={['PHOTO GALLERY', 'MEMORIES & MOMENTS']}
+                  velocity={50}
+                  className="text-[#10b981] font-black tracking-tighter"
+                  numCopies={6}
+                  damping={50}
+                  stiffness={400}
+                />
+              </div>
+
+              <div className="px-6 sm:px-12 max-w-7xl mx-auto">
+                {gallery.length === 0 ? (
+                  <p style={{ color: theme.mutedText }} className="text-center italic">Belum ada foto di galeri.</p>
+                ) : (
+                  <div className="columns-1 sm:columns-2 md:columns-3 gap-6 space-y-6">
+                    {gallery.map((gal) => (
+                      <motion.div 
+                        key={gal.id} 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        whileHover={{ scale: 1.02 }}
+                        className="break-inside-avoid rounded-2xl overflow-hidden shadow-md border"
+                        style={{ borderColor: theme.cardBorder, backgroundColor: theme.cardBg }}
+                      >
+                        <img src={gal.url} alt={gal.caption || 'Gallery Image'} className="w-full h-auto object-cover" />
+                        {gal.caption && (
+                          <div className="p-4">
+                            <p style={{ color: theme.mainText }} className="text-sm font-medium">{gal.caption}</p>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
 
@@ -396,14 +435,19 @@ export default function MainPortfolio() {
               <ArrowLeft size={20} /> Kembali
             </button>
 
-            <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border p-2 rounded-3xl shadow-xl mb-12">
-              <div className="w-full h-64 md:h-[450px] overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
-                {selectedProject.image ? (
-                  <img src={selectedProject.image} alt={selectedProject.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">No Image Available</div>
-                )}
-              </div>
+            {/* Slider Jika Gambar Lebih Dari Satu */}
+            <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border p-2 rounded-3xl shadow-xl mb-12 relative group overflow-hidden">
+               {selectedProject.images && selectedProject.images.length > 1 ? (
+                 <div className="w-full h-64 md:h-[450px] flex overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-2xl bg-slate-100 dark:bg-slate-800">
+                   {selectedProject.images.map((img, i) => (
+                     <img key={i} src={img} alt={`${selectedProject.title} ${i}`} className="w-full h-full object-cover shrink-0 snap-center" />
+                   ))}
+                 </div>
+               ) : (
+                 <div className="w-full h-64 md:h-[450px] overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
+                    <img src={selectedProject.image || (selectedProject.images && selectedProject.images[0])} alt={selectedProject.title} className="w-full h-full object-cover" />
+                 </div>
+               )}
             </div>
 
             <div>

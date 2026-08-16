@@ -1,12 +1,78 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, Save, Plus, Trash2, Loader2, Music } from 'lucide-react';
+import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, Save, Plus, Trash2, Loader2, Music, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+
+// --- KOMPONEN SLIDER GAMBAR MINI ---
+const ImageSlider = ({ images, onUpload }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Pastikan formatnya selalu array (mendukung backward compatibility jika sebelumnya hanya 1 string URL)
+  const validImages = Array.isArray(images) ? images : (images ? [images] : []);
+
+  const nextSlide = (e) => {
+    e.preventDefault();
+    setCurrentIndex((prev) => (prev + 1) % validImages.length);
+  };
+  
+  const prevSlide = (e) => {
+    e.preventDefault();
+    setCurrentIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+  };
+
+  const handleUploadClick = async (e) => {
+    setIsUploading(true);
+    await onUpload(e);
+    setIsUploading(false);
+  };
+
+  return (
+    <div className="w-full h-full relative group bg-slate-100 flex items-center justify-center">
+      {validImages.length > 0 ? (
+        <>
+          {/* Tampilan Gambar */}
+          <img src={validImages[currentIndex]} className="w-full h-full object-cover" alt={`Slide ${currentIndex}`} />
+          
+          {/* Tombol Next & Prev (Hanya muncul jika gambar lebih dari 1) */}
+          {validImages.length > 1 && (
+            <div className="absolute inset-0 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={prevSlide} className="bg-black/60 text-white p-1 rounded-full hover:bg-[#10b981] transition-colors"><ChevronLeft size={16} /></button>
+              <button onClick={nextSlide} className="bg-black/60 text-white p-1 rounded-full hover:bg-[#10b981] transition-colors"><ChevronRight size={16} /></button>
+            </div>
+          )}
+          
+          {/* Indikator Titik-Titik di Bawah */}
+          {validImages.length > 1 && (
+            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+              {validImages.map((_, i) => (
+                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-4 bg-[#10b981]' : 'w-1.5 bg-white/60'}`} />
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-slate-400 flex flex-col items-center">
+          <ImageIcon size={32} className="mb-2" />
+          <span className="text-xs font-bold">No Image</span>
+        </div>
+      )}
+
+      {/* Area Klik Upload (Mendukung seleksi banyak file sekaligus) */}
+      <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity cursor-pointer text-white">
+        {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Upload size={24} />}
+        <span className="text-xs font-bold mt-2">Upload File(s)</span>
+        <input type="file" multiple className="hidden" accept="image/*" onChange={handleUploadClick} disabled={isUploading} />
+      </label>
+    </div>
+  );
+};
+
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -70,7 +136,6 @@ export default function AdminPanel() {
 
   // --- FUNGSI CLOUDINARY UPLOAD ---
   const uploadToCloudinary = async (file) => {
-    setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "portfolio_imam");
@@ -82,17 +147,13 @@ export default function AdminPanel() {
         body: formData
       });
       const data = await res.json();
-      setIsUploading(false);
       
       if (data.secure_url) {
         return data.secure_url;
       } else {
-        toast.error("Cloudinary Error: Periksa nama/preset Anda.");
         return null;
       }
     } catch (error) {
-      setIsUploading(false);
-      toast.error("Gagal menghubungi server Cloudinary.");
       return null;
     }
   };
@@ -118,7 +179,7 @@ export default function AdminPanel() {
         setProfile({ ...profile, audioUrl: data.secure_url });
         toast.success("Musik berhasil diunggah!", { id: 'upload-audio' });
       } else {
-        toast.error("Gagal mengunggah musik. Cek ukuran file.", { id: 'upload-audio' });
+        toast.error("Gagal mengunggah musik.", { id: 'upload-audio' });
       }
     } catch (error) {
       toast.error("Error server Cloudinary.", { id: 'upload-audio' });
@@ -141,19 +202,22 @@ export default function AdminPanel() {
   const handleProfileImage = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast.loading("Mengunggah foto ke Cloudinary...", { id: 'upload' });
+    setIsUploading(true);
+    toast.loading("Mengunggah foto...", { id: 'upload' });
     const url = await uploadToCloudinary(file);
     if (url) {
       setProfile({ ...profile, avatar: url });
       toast.success("Foto berhasil diunggah!", { id: 'upload' });
     } else {
-      toast.dismiss('upload');
+      toast.error("Gagal upload", { id: 'upload' });
     }
+    setIsUploading(false);
   };
 
   // --- HANDLER PROJECTS ---
   const handleAddProject = () => {
-    setProjects([{ isNew: true, tempId: Date.now(), title: '', desc: '', tech: '', category: 'Web Dev', image: '' }, ...projects]);
+    // Field images sekarang menggunakan Array []
+    setProjects([{ isNew: true, tempId: Date.now(), title: '', desc: '', tech: '', category: 'Web Dev', images: [], image: '' }, ...projects]);
   };
 
   const handleSaveProject = async (proj) => {
@@ -192,22 +256,36 @@ export default function AdminPanel() {
     }
   };
 
-  // PERBAIKAN LOGIKA UPLOAD GAMBAR PROJECT
+  // LOGIKA BARU: MENDUKUNG UPLOAD BANYAK FOTO SEKALIGUS
   const handleProjectImage = async (e, projId, tempId) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    toast.loading("Mengunggah gambar project...", { id: 'proj-img' });
-    const url = await uploadToCloudinary(file);
-    if (url) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    toast.loading(`Mengunggah ${files.length} gambar...`, { id: 'proj-img' });
+
+    const uploadedUrls = [];
+    for (const file of files) {
+      const url = await uploadToCloudinary(file);
+      if (url) uploadedUrls.push(url);
+    }
+
+    if (uploadedUrls.length > 0) {
       setProjects(projects.map(p => {
-        // Logika mutlak: Jika sudah di firebase cek ID, jika baru cek tempId
-        if (projId && p.id === projId) return { ...p, image: url };
-        if (!projId && tempId && p.tempId === tempId) return { ...p, image: url };
+        if ((projId && p.id === projId) || (!projId && tempId && p.tempId === tempId)) {
+          // Gabungkan gambar lama (jika ada) dengan gambar baru
+          const currentImages = p.images || (p.image ? [p.image] : []);
+          const updatedImages = [...currentImages, ...uploadedUrls];
+          return { 
+            ...p, 
+            images: updatedImages, 
+            image: updatedImages[0] // Tetap simpan 1 gambar utama di field 'image' untuk backward compatibility
+          };
+        }
         return p;
       }));
-      toast.success("Gambar terunggah!", { id: 'proj-img' });
+      toast.success(`${uploadedUrls.length} gambar berhasil ditambahkan!`, { id: 'proj-img' });
     } else {
-      toast.dismiss('proj-img');
+      toast.error("Gagal mengunggah gambar", { id: 'proj-img' });
     }
   };
 
@@ -223,7 +301,7 @@ export default function AdminPanel() {
         const { isNew, tempId, ...dataToSave } = ach;
         const docRef = await addDoc(collection(db, "achievements"), dataToSave);
         setAchievements(achievements.map(a => a.tempId === ach.tempId ? { ...dataToSave, id: docRef.id } : a));
-        toast.success("Prestasi ditambahkan ke Firebase!");
+        toast.success("Prestasi ditambahkan!");
       } else {
         const { id, ...dataToUpdate } = ach;
         await updateDoc(doc(db, "achievements", id), dataToUpdate);
@@ -281,25 +359,20 @@ export default function AdminPanel() {
     if (window.confirm("Hapus foto galeri ini?")) {
       await deleteDoc(doc(db, "gallery", id));
       setGallery(gallery.filter(g => g.id !== id));
-      toast.success("Foto dihapus dari Firebase.");
+      toast.success("Foto dihapus.");
     }
   };
 
-  // PERBAIKAN LOGIKA UPLOAD GAMBAR GALLERY
   const handleGalleryImage = async (e, galId, tempId) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast.loading("Mengunggah foto ke Cloudinary...", { id: 'gal-img' });
+    toast.loading("Mengunggah foto...", { id: 'gal-img' });
     const url = await uploadToCloudinary(file);
     if (url) {
-      setGallery(gallery.map(g => {
-        if (galId && g.id === galId) return { ...g, url: url };
-        if (!galId && tempId && g.tempId === tempId) return { ...g, url: url };
-        return g;
-      }));
+      setGallery(gallery.map(g => (galId ? g.id === galId : g.tempId === tempId) ? { ...g, url: url } : g));
       toast.success("Foto terunggah!", { id: 'gal-img' });
     } else {
-      toast.dismiss('gal-img');
+      toast.error("Gagal upload", { id: 'gal-img' });
     }
   };
 
@@ -457,12 +530,13 @@ export default function AdminPanel() {
 
               {projects.map((proj) => (
                 <div key={proj.id || proj.tempId} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-6 relative">
-                  <div className="w-full md:w-48 h-32 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 shrink-0 overflow-hidden relative group flex items-center justify-center">
-                    {proj.image ? <img src={proj.image} className="w-full h-full object-cover" alt="Project" /> : <ImageIcon className="text-slate-300" />}
-                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white">
-                      <Upload size={24}/>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleProjectImage(e, proj.id, proj.tempId)} />
-                    </label>
+                  
+                  {/* PENERAPAN KOMPONEN SLIDER UNTUK GAMBAR PROJECT */}
+                  <div className="w-full md:w-48 h-32 rounded-lg border-2 border-dashed border-slate-300 shrink-0 overflow-hidden relative">
+                    <ImageSlider 
+                      images={proj.images || (proj.image ? [proj.image] : [])} 
+                      onUpload={(e) => handleProjectImage(e, proj.id, proj.tempId)} 
+                    />
                   </div>
                   
                   <div className="flex-1 space-y-3">
