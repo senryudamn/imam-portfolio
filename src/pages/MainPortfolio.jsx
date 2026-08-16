@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, Lock, ArrowUpRight, Send } from 'lucide-react';
+import { Terminal, ArrowUpRight, Send } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
+import StaggeredMenu from '../components/StaggeredMenu'; // Import komponen menu baru
 
 export default function MainPortfolio() {
   const [loading, setLoading] = useState(true);
@@ -33,11 +34,6 @@ export default function MainPortfolio() {
     loadData();
   }, []);
 
-  const forceGoToAdmin = (e) => {
-    e.preventDefault();
-    window.location.href = '/admin';
-  };
-
   const handleSendMessage = (e) => {
     e.preventDefault();
     alert("Pesan Anda telah terkirim! (Ini adalah simulasi)");
@@ -55,26 +51,40 @@ export default function MainPortfolio() {
 
   const githubUsername = profile.github ? profile.github.split('/').pop() : 'senryudamn';
 
+  // Data untuk Staggered Menu
+  const menuItems = [
+    { label: 'Home', ariaLabel: 'Go to home page', link: '#about' },
+    { label: 'Projects', ariaLabel: 'View our projects', link: '#projects' },
+    { label: 'Experience', ariaLabel: 'View my experience', link: '#achievements' },
+    { label: 'Contact', ariaLabel: 'Get in touch', link: '#contact' },
+    { label: 'Admin Mode', ariaLabel: 'Go to admin panel', link: '/admin' } // Tombol admin dipindah ke sini
+  ];
+
+  // Data Sosial Media dinamis dari state profile
+  const socialItems = [
+    ...(profile.linkedin ? [{ label: 'LinkedIn', link: profile.linkedin }] : []),
+    ...(profile.github ? [{ label: 'GitHub', link: profile.github }] : []),
+    ...(profile.email ? [{ label: 'Email', link: `mailto:${profile.email}` }] : [])
+  ];
+
   return (
-    <div className="min-h-screen bg-[#fcfcfc] text-slate-900 font-sans selection:bg-[#10b981] selection:text-white">
+    <div className="min-h-screen bg-[#fcfcfc] text-slate-900 font-sans selection:bg-[#10b981] selection:text-white relative">
       
-      {/* NAVBAR */}
-      <nav className="fixed top-0 w-full bg-[#fcfcfc]/90 backdrop-blur-md z-50 py-5 px-6 md:px-12 flex justify-between items-center border-b border-slate-200">
-        <div className="font-black text-xl tracking-tighter flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#10b981] rounded-full"></div>
-          IMAM.dev
-        </div>
-        <div className="hidden md:flex gap-8 text-sm font-semibold tracking-wide">
-          <a href="#about" className="hover:text-[#10b981] transition-colors">Home</a>
-          <a href="#projects" className="hover:text-[#10b981] transition-colors">Projects</a>
-          <a href="#achievements" className="hover:text-[#10b981] transition-colors">Experience</a>
-          <a href="#contact" className="hover:text-[#10b981] transition-colors">Contact</a>
-          
-          <button onClick={forceGoToAdmin} className="flex items-center gap-1.5 text-[#10b981] hover:text-white hover:bg-[#10b981] transition-all px-4 py-1.5 rounded-full border border-[#10b981]">
-            <Lock size={14}/> Admin Mode
-          </button>
-        </div>
-      </nav>
+      {/* NAVBAR STAGGERED MENU */}
+      <StaggeredMenu
+        position="right"
+        items={menuItems}
+        socialItems={socialItems}
+        displaySocials={true}
+        displayItemNumbering={true}
+        isFixed={true}
+        menuButtonColor="#10b981" 
+        openMenuButtonColor="#10b981"
+        changeMenuColorOnOpen={true}
+        // Background overlay menu disesuaikan dengan tema terang website Anda
+        colors={['#ffffff', '#f8fafc']} 
+        accentColor="#10b981" 
+      />
 
       {/* HERO SECTION */}
       <section id="about" className="pt-40 pb-20 px-6 sm:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
@@ -170,7 +180,6 @@ export default function MainPortfolio() {
       <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
         <div className="max-w-7xl mx-auto px-6 z-20 relative">
           
-          {/* JUDUL DI ATAS TENGAH PERSIS SEPERTI GAMBAR ANDA */}
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">
               Let's Work <span className="text-[#10b981]">Together</span>
@@ -180,10 +189,8 @@ export default function MainPortfolio() {
             </p>
           </div>
 
-          {/* DIBAGI 2 KOLOM (KIRI LANYARD, KANAN HUBUNGI) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
             
-            {/* BAGIAN KIRI: Lanyard 3D */}
             <div className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/50 rounded-3xl border border-white/5 shadow-inner">
                <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
                <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">
@@ -191,7 +198,6 @@ export default function MainPortfolio() {
                </p>
             </div>
 
-            {/* BAGIAN KANAN: Formulir Chat/Hubungi */}
             <div className="bg-[#1e293b]/30 p-8 md:p-10 rounded-3xl border border-white/5 flex flex-col h-[550px] justify-between shadow-2xl">
               <div>
                 <h3 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
@@ -235,7 +241,6 @@ export default function MainPortfolio() {
                 </form>
               </div>
 
-              {/* SOCIAL MEDIA LINKS DI BAGIAN BAWAH FORM */}
               <div className="flex gap-6 mt-6 text-slate-500 font-bold tracking-widest text-sm uppercase justify-center pt-6 border-t border-slate-700/30">
                 {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition">LinkedIn</a>}
                 {profile.github && <a href={profile.github} target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition">GitHub</a>}
