@@ -16,7 +16,7 @@ export const StaggeredMenu = ({
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
-  darkMode = false, // Menerima trigger Mode Gelap dari MainPortfolio
+  darkMode = false, // <-- TRIGGER MODE GELAP DARI MAIN PORTFOLIO
   onMenuOpen,
   onMenuClose
 }) => {
@@ -264,7 +264,7 @@ export const StaggeredMenu = ({
     [openMenuButtonColor, menuButtonColor, changeMenuColorOnOpen]
   );
 
-  // Efek ini memastikan GSAP memperbarui warna tombol menu secara instan saat Dark Mode diklik
+  // EFEK INI MEMASTIKAN WARNA TOMBOL MENU BERUBAH SECARA INSTAN SAAT DARK MODE DIKLIK
   useEffect(() => {
     if (toggleBtnRef.current) {
       const targetColor = openRef.current && changeMenuColorOnOpen ? openMenuButtonColor : menuButtonColor;
@@ -356,7 +356,8 @@ export const StaggeredMenu = ({
       data-open={open || undefined}
     >
       
-      {/* SUNTIKAN CSS MUTLAK UNTUK DARK MODE */}
+      {/* 1. SUNTIKAN CSS DINAMIS UNTUK DARK MODE */}
+      {/* Kode ini memaksa seluruh panel dan teks di dalamnya berubah seketika mengikuti mode terang/gelap */}
       <style>{`
         .staggered-menu-panel {
           background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
@@ -374,7 +375,7 @@ export const StaggeredMenu = ({
           color: ${accentColor} !important;
         }
         .sm-socials-link {
-          color: ${darkMode ? '#94a3b8' : '#475569'} !important;
+          color: ${darkMode ? '#94a3b8' : '#64748b'} !important;
           transition: color 0.3s ease !important;
         }
         .sm-socials-link:hover {
@@ -386,9 +387,9 @@ export const StaggeredMenu = ({
         }
       `}</style>
 
+      {/* 2. LAYER ANIMASI TRANISI WARNA (Mengikuti tema Gelap/Terang) */}
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
-          // Warna animasi transisi GSAP juga disinkronkan secara mulus
           const activeColors = colors && colors.length ? colors : (darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']);
           const raw = activeColors.slice(0, 4);
           let arr = [...raw];
@@ -400,7 +401,7 @@ export const StaggeredMenu = ({
         })()}
       </div>
 
-      {/* HEADER FIXED DENGAN WARNA ADAPTIF KACA BURAM */}
+      {/* 3. HEADER FIXED DENGAN KACA BURAM & WARNA TEKS DINAMIS */}
       <header 
         className="staggered-menu-header" 
         aria-label="Main navigation header"
@@ -424,12 +425,13 @@ export const StaggeredMenu = ({
       >
         <div className="sm-logo" aria-label="Logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
+          {/* Ini adalah baris yang hilang di kode lama Anda, membuat teks logo menyesuaikan warna saat mode gelap */}
           <span style={{ 
             fontSize: '1.25rem', 
             fontWeight: '900', 
             letterSpacing: '-0.05em',
             transition: 'color 0.3s ease',
-            color: darkMode ? '#ffffff' : '#0f172a'
+            color: darkMode ? '#ffffff' : '#0f172a' 
           }}>
             IMAM.dev
           </span>
@@ -453,13 +455,14 @@ export const StaggeredMenu = ({
             </span>
           </span>
           <span ref={iconRef} className="sm-icon" aria-hidden="true">
-            {/* Ikon hamburger ini diatur agar mengikuti properti 'color' dari parent button yang dikendalikan GSAP */}
+            {/* Ikon hamburger GSAP akan otomatis menyerap warna tombol berdasarkan state */}
             <span ref={plusHRef} className="sm-icon-line" style={{ backgroundColor: 'currentColor' }}/>
             <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ backgroundColor: 'currentColor' }}/>
           </span>
         </button>
       </header>
 
+      {/* 4. STRUKTUR MENU SAMPING */}
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
         <div className="sm-panel-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
