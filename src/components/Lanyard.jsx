@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, extend, useFrame } from '@react-three/fiber';
-import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
+import { useGLTF, useTexture, Environment, Lightformer, Center } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
@@ -11,7 +11,6 @@ import lanyard from './lanyard.svg';
 extend({ MeshLineGeometry, MeshLineMaterial });
 const BLANK_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-// FIX 1: Memperluas pandangan kamera (fov) agar kartu tidak cepat hilang saat ditarik
 export default function Lanyard({ position = [0, 0, 25], gravity = [0, -40, 0], fov = 25, frontImage = null }) {
   return (
     <Canvas camera={{ position: position, fov: fov }} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
@@ -32,23 +31,25 @@ export default function Lanyard({ position = [0, 0, 25], gravity = [0, -40, 0], 
 function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
-  const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 2, linearDamping: 2 }; // FIX 2: Kurangi damping agar lebih luwes berayun
+  
+  // FIX: canSleep=false agar kartu tidak freeze saat diam/ditarik
+  const segmentProps = { type: 'dynamic', canSleep: false, colliders: false, angularDamping: 0.8, linearDamping: 1.5 };
 
   const { scene } = useGLTF(umbrellaGLB);
   const texture = useTexture(lanyard);
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
 
+  // Menyesuaikan rasio foto agar pas menjadi kotak ID
   const createStickerTexture = (baseTex) => {
     if (!baseTex || !baseTex.image) return baseTex;
     const canvas = document.createElement('canvas');
-    // FIX 3: Sesuaikan rasio stiker agar lebih pas dengan area putih Umbrella Card
-    canvas.width = 380; canvas.height = 420;
+    canvas.width = 400; canvas.height = 500;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 380, 420);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 400, 500);
     const img = baseTex.image;
-    const scale = Math.max(380 / img.width, 420 / img.height);
+    const scale = Math.max(400 / img.width, 500 / img.height);
     const dw = img.width * scale; const dh = img.height * scale;
-    const dx = (380 - dw) / 2; const dy = (420 - dh) / 2;
+    const dx = (400 - dw) / 2; const dy = (500 - dh) / 2;
     ctx.drawImage(img, dx, dy, dw, dh);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace; return tex;
@@ -59,10 +60,14 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
-  // Fisika Tali (Diperpanjang sedikit agar terlihat lebih natural)
+  // Fisika Tali
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
+  
+  // FIX POSISI TALI KIRI/TENGAH:
+  // Angka [0, 2.2, 0] artinya tali menempel di X=0 (Tengah), Y=2.2 (Atas).
+  // Jika Anda ingin talinya benar-benar bergeser ke kiri kartu, ubah angka pertama menjadi minus, contoh: [-0.8, 2.2, 0]
   useSphericalJoint(j3, card, [[0, 0, 0], [0, 2.2, 0]]);
 
   useEffect(() => {
@@ -84,7 +89,7 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
         ref.current.lerped.lerp(ref.current.translation(), delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed)));
       });
 
-      // FIX 4: Pastikan titik 0 tali selalu mengikuti koordinat J3 agar tidak terputus
+      // Offset pangkal tali harus sama dengan useSphericalJoint di atas
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
       const offset = new THREE.Vector3(0, 2.2, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
@@ -95,9 +100,8 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
       curve.points[3].copy(fixed.current.translation());
       band.current.geometry.setPoints(curve.getPoints(32));
       
-      // FIX 5: Rotasi yang lebih dinamis saat dilepas
       ang.copy(card.current.angvel()); rot.copy(card.current.rotation());
-      card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.5, z: ang.z });
+      card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z });
     }
   });
 
@@ -110,11 +114,9 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
       <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
-      {/* FIX 6: Menambahkan angularDamping yang rendah agar kartu bebas berputar */}
-      <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={0.5} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        <CuboidCollider args={[1, 1.8, 0.1]} />
+      <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
+        <CuboidCollider args={[1.2, 2, 0.1]} />
         <group
-          scale={0.55} // Sedikit diperbesar
           position={[0, -1, 0]}
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
@@ -124,21 +126,25 @@ function Band({ maxSpeed = 50, minSpeed = 10, frontImage = null }) {
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          <primitive object={scene} />
-
-          {/* FIX 7: Posisi stiker disesuaikan agar pas di kotak putih kartu Umbrella */}
-          <mesh position={[0, -0.6, 0.2]} rotation={[0, 0, 0]}>
-             <planeGeometry args={[1.9, 2.2]} /> 
-             <meshPhysicalMaterial map={frontMap} roughness={0.4} clearcoat={1} clearcoatRoughness={0.1} />
-          </mesh>
-
+          <Center>
+            {/* MODEL UMBRELLA ASLI */}
+            <primitive object={scene} scale={2.5} />
+            
+            {/* STIKER FOTO PROFIL */}
+            {/* position: [Kiri/Kanan, Atas/Bawah, Maju/Mundur] */}
+            {/* args: [Lebar, Tinggi] */}
+            <mesh position={[0, -0.6, 0.18]} rotation={[0, 0, 0]}>
+               <planeGeometry args={[1.55, 1.95]} /> 
+               <meshPhysicalMaterial map={frontMap} roughness={0.5} clearcoat={1} clearcoatRoughness={0.1} />
+            </mesh>
+          </Center>
         </group>
       </RigidBody>
       
-      {/* FIX 8: FrustumCulled=false mutlak agar tali tidak hilang */}
+      {/* FIX: Tali tebal & Anti-hilang */}
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
-        <meshLineMaterial color="#cbd5e1" depthTest={false} resolution={[2000, 2000]} useMap map={texture} repeat={[-4, 1]} lineWidth={1.5} />
+        <meshLineMaterial color="#cbd5e1" depthTest={false} resolution={[2000, 2000]} useMap map={texture} repeat={[-4, 1]} lineWidth={3} />
       </mesh>
     </group>
   );
