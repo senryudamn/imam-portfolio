@@ -4,7 +4,7 @@ import { Terminal, ArrowUpRight, Send } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
-import StaggeredMenu from '../components/StaggeredMenu'; // Import komponen menu baru
+import StaggeredMenu from '../components/StaggeredMenu'; 
 
 export default function MainPortfolio() {
   const [loading, setLoading] = useState(true);
@@ -51,16 +51,19 @@ export default function MainPortfolio() {
 
   const githubUsername = profile.github ? profile.github.split('/').pop() : 'senryudamn';
 
-  // Data untuk Staggered Menu
+  // LOGIKA NAMA: Ambil kata pertama dari nama lengkap, lalu jadikan Huruf Kapital awalnya
+  const rawName = profile.name ? profile.name.split(' ')[0] : 'Imam';
+  const firstName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const role = profile.role || 'Mechatronics Engineer';
+
+  // HAPUS ADMIN MODE DARI SINI (Kita pindahkan ke komponen menu langsung)
   const menuItems = [
     { label: 'Home', ariaLabel: 'Go to home page', link: '#about' },
     { label: 'Projects', ariaLabel: 'View our projects', link: '#projects' },
     { label: 'Experience', ariaLabel: 'View my experience', link: '#achievements' },
-    { label: 'Contact', ariaLabel: 'Get in touch', link: '#contact' },
-    { label: 'Admin Mode', ariaLabel: 'Go to admin panel', link: '/admin' } // Tombol admin dipindah ke sini
+    { label: 'Contact', ariaLabel: 'Get in touch', link: '#contact' }
   ];
 
-  // Data Sosial Media dinamis dari state profile
   const socialItems = [
     ...(profile.linkedin ? [{ label: 'LinkedIn', link: profile.linkedin }] : []),
     ...(profile.github ? [{ label: 'GitHub', link: profile.github }] : []),
@@ -70,7 +73,6 @@ export default function MainPortfolio() {
   return (
     <div className="min-h-screen bg-[#fcfcfc] text-slate-900 font-sans selection:bg-[#10b981] selection:text-white relative">
       
-      {/* NAVBAR STAGGERED MENU */}
       <StaggeredMenu
         position="right"
         items={menuItems}
@@ -81,18 +83,18 @@ export default function MainPortfolio() {
         menuButtonColor="#10b981" 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
-        // Background overlay menu disesuaikan dengan tema terang website Anda
         colors={['#ffffff', '#f8fafc']} 
         accentColor="#10b981" 
       />
 
-      {/* HERO SECTION */}
       <section id="about" className="pt-40 pb-20 px-6 sm:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
         <div className="flex-1 space-y-6">
           <p className="text-sm font-bold tracking-widest uppercase text-slate-500 mb-2">Based in Yogyakarta, Indonesia</p>
-          <div className="h-auto md:h-[180px]">
+          
+          {/* FOLD TEXT SEKARANG MENGGUNAKAN DATA YANG SUDAH DIFORMAT */}
+          <div className="h-auto md:h-[180px] w-full">
             <FoldText
-              text={`Hi, I'm ${profile.name?.split(' ')[0] || "Imam"}.\n${profile.role || "Mechatronics Engineer"}`}
+              text={`Hi, I'm ${firstName}.\n${role}`}
               splitBy="line"
               hinge="bottom"
               trigger="mount"
@@ -103,6 +105,7 @@ export default function MainPortfolio() {
               color="#0f172a"
             />
           </div>
+
           <p className="text-lg text-slate-600 leading-relaxed max-w-xl font-medium">{profile.bio}</p>
           <div className="flex gap-4 pt-6">
             <a href="#projects" className="bg-[#10b981] text-white font-bold px-8 py-3.5 rounded-full hover:bg-emerald-600 transition shadow-lg shadow-emerald-500/30">View Work</a>
@@ -120,7 +123,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* GITHUB CONTRIBUTIONS */}
       <section className="py-16 px-6 sm:px-12 max-w-7xl mx-auto border-t border-slate-200">
         <h2 className="text-sm font-bold tracking-widest text-slate-500 uppercase mb-8">Github Contributions</h2>
         <div className="bg-white p-8 border border-slate-200 shadow-sm overflow-x-auto">
@@ -128,7 +130,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* PROJECTS SECTION */}
       <section id="projects" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t border-slate-200 bg-slate-100/50">
         <div className="mb-16">
           <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Selected Projects</h2>
@@ -158,7 +159,6 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* ACHIEVEMENTS */}
       <section id="achievements" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t border-slate-200">
          <div className="mb-16">
           <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Experiences & Awards</h2>
@@ -176,10 +176,8 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* CONTACT & LANYARD SECTION */}
       <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
         <div className="max-w-7xl mx-auto px-6 z-20 relative">
-          
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">
               Let's Work <span className="text-[#10b981]">Together</span>
@@ -190,7 +188,6 @@ export default function MainPortfolio() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
-            
             <div className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/50 rounded-3xl border border-white/5 shadow-inner">
                <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
                <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">
@@ -208,31 +205,16 @@ export default function MainPortfolio() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Nama</label>
-                      <input 
-                        type="text" 
-                        placeholder="Nama Anda" 
-                        className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
-                        required 
-                      />
+                      <input type="text" placeholder="Nama Anda" className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" required />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Email</label>
-                      <input 
-                        type="email" 
-                        placeholder="Email Anda" 
-                        className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
-                        required 
-                      />
+                      <input type="email" placeholder="Email Anda" className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" required />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Pesan / Penawaran</label>
-                    <textarea 
-                      rows="4" 
-                      placeholder="Tuliskan pesan Anda di sini..." 
-                      className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all resize-none" 
-                      required
-                    ></textarea>
+                    <textarea rows="4" placeholder="Tuliskan pesan Anda di sini..." className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all resize-none" required></textarea>
                   </div>
                   
                   <button type="submit" className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 w-full mt-2">
@@ -247,7 +229,6 @@ export default function MainPortfolio() {
                 {profile.email && <a href={`mailto:${profile.email}`} className="hover:text-[#10b981] transition">Email</a>}
               </div>
             </div>
-
           </div>
         </div>
       </section>

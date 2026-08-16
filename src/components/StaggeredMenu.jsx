@@ -350,6 +350,9 @@ export const StaggeredMenu = ({
     };
   }, [closeOnClickAway, open, closeMenu]);
 
+  // ==========================================
+  // BAGIAN UI (JSX) DIMULAI DI SINI
+  // ==========================================
   return (
     <div
       className={(className ? className + ' ' : '') + 'staggered-menu-wrapper' + (isFixed ? ' fixed-wrapper' : '')}
@@ -369,16 +372,15 @@ export const StaggeredMenu = ({
         })()}
       </div>
       <header className="staggered-menu-header" aria-label="Main navigation header">
-        <div className="sm-logo" aria-label="Logo">
-          <img
-            src={logoUrl || '/src/assets/logos/reactbits-gh-white.svg'}
-            alt="Logo"
-            className="sm-logo-img"
-            draggable={false}
-            width={110}
-            height={24}
-          />
+        
+        {/* FIX 1: Logo Gambar Dihapus, Diganti dengan Teks Murni */}
+        <div className="sm-logo" aria-label="Logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
+          <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.05em' }}>
+            IMAM.dev
+          </span>
         </div>
+
         <button
           ref={toggleBtnRef}
           className="sm-toggle"
@@ -405,7 +407,7 @@ export const StaggeredMenu = ({
       </header>
 
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
-        <div className="sm-panel-inner">
+        <div className="sm-panel-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (
               items.map((it, idx) => (
@@ -423,20 +425,53 @@ export const StaggeredMenu = ({
               </li>
             )}
           </ul>
-          {displaySocials && socialItems && socialItems.length > 0 && (
-            <div className="sm-socials" aria-label="Social links">
-              <h3 className="sm-socials-title">Socials</h3>
-              <ul className="sm-socials-list" role="list">
-                {socialItems.map((s, i) => (
-                  <li key={s.label + i} className="sm-socials-item">
-                    <a href={s.link} target="_blank" rel="noopener noreferrer" className="sm-socials-link">
-                      {s.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+          
+          {/* FIX 2: Wrapper untuk Socials dan Admin Mode agar selalu di bagian bawah */}
+          <div style={{ marginTop: 'auto' }}>
+            {displaySocials && socialItems && socialItems.length > 0 && (
+              <div className="sm-socials" aria-label="Social links">
+                <h3 className="sm-socials-title">Socials</h3>
+                <ul className="sm-socials-list" role="list">
+                  {socialItems.map((s, i) => (
+                    <li key={s.label + i} className="sm-socials-item">
+                      <a href={s.link} target="_blank" rel="noopener noreferrer" className="sm-socials-link">
+                        {s.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* FIX 3: Link Admin Mode berukuran kecil dan bergaris atas */}
+            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1.5rem' }}>
+              <a 
+                href="/admin" 
+                style={{ 
+                  fontSize: '0.8rem', 
+                  fontWeight: 'bold', 
+                  color: '#10b981', 
+                  textDecoration: 'none', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.1em', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  opacity: 0.8,
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                onMouseOut={(e) => e.currentTarget.style.opacity = 0.8}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Admin Mode
+              </a>
             </div>
-          )}
+            
+          </div>
         </div>
       </aside>
     </div>
