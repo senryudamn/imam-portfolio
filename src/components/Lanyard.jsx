@@ -5,9 +5,10 @@ import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphe
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
+// 3 File sakti kita
 import umbrellaGLB from './umbrella.glb';
 import lanyard from './lanyard.png'; 
-// PERHATIKAN: Saya sudah menghapus import 'texture.png' karena sudah tidak dibutuhkan lagi!
+import cardTexture from './texture.png'; 
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
@@ -33,22 +34,40 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   
-  const segmentProps = { type: 'dynamic', canSleep: false, colliders: false, angularDamping: 1, linearDamping: 1.5 };
+  const segmentProps = { type: 'dynamic', canSleep: false, colliders: false, angularDamping: 0.8, linearDamping: 1.5 };
 
   const { scene } = useGLTF(umbrellaGLB);
   const texture = useTexture(lanyard);
+  
+  // FIX: Memuat gambar tekstur yang sudah ada foto Anda
+  const customTex = useTexture(cardTexture);
+  customTex.flipY = false; // Agar desainnya tidak terbalik
+  customTex.colorSpace = THREE.SRGBColorSpace;
+
+  // FIX: Memaksa model GLB lama memakai tekstur bergambar wajah Anda
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          map: customTex,
+          roughness: 0.3,
+          metalness: 0.1
+        });
+      }
+    });
+  }, [scene, customTex]);
 
   const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
-  // Fisika Tali
+  // Fisika Tali Dinamis
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
   
-  // FIX: Titik sendi fisika dikunci di ujung atas kartu (Y = 1.2)
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.2, 0]]);
+  // Presisi titik sambungan antara tali dinamis dan lubang jepitan besi kartu
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.15, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -71,8 +90,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
 
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      // FIX: Visual tali mengikuti titik ujung atas kartu secara presisi
-      const offset = new THREE.Vector3(0, 1.2, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      const offset = new THREE.Vector3(0, 1.15, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
@@ -97,6 +115,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={0.8} type={dragged ? 'kinematicPosition' : 'dynamic'}>
         <CuboidCollider args={[0.8, 1.15, 0.05]} />
         <group
+          position={[0, -1.05, 0]} 
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -105,9 +124,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* FIX: Center otomatis mencari titik tengah model 3D Anda yang baru */}
-          {/* position Y diturunkan sedikit (-0.15) agar ujung jepitan persis berada di koordinat tali */}
-          <Center position={[0, -0.15, 0]}>
+          <Center>
             <primitive object={scene} scale={0.8} />
           </Center>
         </group>
