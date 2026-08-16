@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, Save, Plus, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, Save, Plus, Trash2, Loader2, Music } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -15,7 +15,7 @@ export default function AdminPanel() {
   const [isSaving, setIsSaving] = useState(false);
 
   // State Data
-  const [profile, setProfile] = useState({ name: '', role: '', bio: '', email: '', linkedin: '', github: '', avatar: '' });
+  const [profile, setProfile] = useState({ name: '', role: '', bio: '', email: '', linkedin: '', github: '', avatar: '', audioUrl: '', audioTitle: '' });
   const [projects, setProjects] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [gallery, setGallery] = useState([]);
@@ -68,7 +68,7 @@ export default function AdminPanel() {
     toast.success("Berhasil logout.");
   };
 
-  // --- FUNGSI CLOUDINARY UPLOAD ---
+  // --- FUNGSI CLOUDINARY UPLOAD (GAMBAR) ---
   const uploadToCloudinary = async (file) => {
     setIsUploading(true);
     const formData = new FormData();
@@ -94,6 +94,36 @@ export default function AdminPanel() {
       setIsUploading(false);
       toast.error("Gagal menghubungi server Cloudinary.");
       return null;
+    }
+  };
+
+  // --- FUNGSI CLOUDINARY UPLOAD (AUDIO/MUSIK) ---
+  const handleAudioUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    toast.loading("Mengunggah musik ke Cloudinary...", { id: 'upload-audio' });
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "portfolio_imam");
+
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "aj1qdylv";
+      // Perhatikan endpoint menggunakan "/video/upload" karena Cloudinary memproses audio di bawah kategori video
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.secure_url) {
+        setProfile({ ...profile, audioUrl: data.secure_url });
+        toast.success("Musik berhasil diunggah!", { id: 'upload-audio' });
+      } else {
+        toast.error("Gagal mengunggah musik. Cek ukuran file.", { id: 'upload-audio' });
+      }
+    } catch (error) {
+      toast.error("Error server Cloudinary.", { id: 'upload-audio' });
     }
   };
 
@@ -367,7 +397,30 @@ export default function AdminPanel() {
                   <textarea rows="4" value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] focus:ring-1 outline-none"></textarea>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-100">
+                {/* --- SEKSI UPLOAD MUSIK --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Judul Lagu</label>
+                    <input type="text" placeholder="Contoh: Daniel Caesar - Get You" value={profile.audioTitle || ''} onChange={(e) => setProfile({...profile, audioTitle: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] focus:ring-1 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">File Musik (MP3/WAV)</label>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3">
+                        <label className="cursor-pointer shrink-0 bg-slate-900 hover:bg-slate-800 text-white px-4 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                          <Music size={16} /> Upload Audio
+                          <input type="file" className="hidden" accept="audio/*" onChange={handleAudioUpload} />
+                        </label>
+                        <input type="text" placeholder="Atau paste URL audio..." value={profile.audioUrl || ''} onChange={(e) => setProfile({...profile, audioUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] outline-none text-sm" />
+                      </div>
+                      {profile.audioUrl && (
+                        <audio controls src={profile.audioUrl} className="w-full h-10 rounded-lg shadow-sm" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Email</label>
                     <input type="email" value={profile.email} onChange={(e) => setProfile({...profile, email: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#10b981]" />

@@ -350,9 +350,6 @@ export const StaggeredMenu = ({
     };
   }, [closeOnClickAway, open, closeMenu]);
 
-  // ==========================================
-  // BAGIAN UI (JSX) DIMULAI DI SINI
-  // ==========================================
   return (
     <div
       className={(className ? className + ' ' : '') + 'staggered-menu-wrapper' + (isFixed ? ' fixed-wrapper' : '')}
@@ -371,12 +368,18 @@ export const StaggeredMenu = ({
           return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />);
         })()}
       </div>
-      <header className="staggered-menu-header" aria-label="Main navigation header">
+
+      {/* FIX UTAMA: Efek Kaca Buram (Glassmorphism) yang dikunci (Fixed) di atas dengan dukungan Dark Mode */}
+      <header 
+        className="fixed top-0 left-0 w-full flex justify-between items-center px-6 md:px-12 py-5 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300 pointer-events-auto" 
+        style={{ zIndex: 50 }}
+        aria-label="Main navigation header"
+      >
         
-        {/* FIX 1: Logo Gambar Dihapus, Diganti dengan Teks Murni */}
-        <div className="sm-logo" aria-label="Logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
-          <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.05em' }}>
+        {/* Teks Logo Adaptif Terhadap Dark Mode */}
+        <div className="flex items-center gap-2" aria-label="Logo">
+          <div className="w-3 h-3 bg-[#10b981] rounded-full"></div>
+          <span className="text-xl font-bold text-slate-900 dark:text-white tracking-wide transition-colors duration-300">
             IMAM.dev
           </span>
         </div>
@@ -426,7 +429,7 @@ export const StaggeredMenu = ({
             )}
           </ul>
           
-          {/* FIX 2: Wrapper untuk Socials dan Admin Mode agar selalu di bagian bawah */}
+          {/* Menu Bawah: Socials & Admin Mode */}
           <div style={{ marginTop: 'auto' }}>
             {displaySocials && socialItems && socialItems.length > 0 && (
               <div className="sm-socials" aria-label="Social links">
@@ -443,7 +446,6 @@ export const StaggeredMenu = ({
               </div>
             )}
             
-            {/* FIX 3: Link Admin Mode berukuran kecil dan bergaris atas */}
             <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1.5rem' }}>
               <a 
                 href="/admin" 
