@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
+import { useGLTF, useTexture, Environment, Lightformer, Center } from '@react-three/drei';
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from '@react-three/rapier';
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
 import umbrellaGLB from './umbrella.glb';
-import lanyard from './lanyard.svg';
-// MENGIMPOR GAMBAR TEKSTUR ANDA SECARA LANGSUNG
+// FIX: Mengubah ekstensi menjadi .png sesuai file baru Anda
+import lanyard from './lanyard.png'; 
 import cardTexture from './texture.png'; 
 
 extend({ MeshLineGeometry, MeshLineMaterial });
@@ -39,12 +39,10 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   const { scene } = useGLTF(umbrellaGLB);
   const texture = useTexture(lanyard);
   
-  // Memuat gambar tekstur (yang ada wajah Anda)
   const customTex = useTexture(cardTexture);
-  customTex.flipY = false; // Memastikan gambar tidak terbalik saat dibungkus ke 3D
+  customTex.flipY = false; 
   customTex.colorSpace = THREE.SRGBColorSpace;
 
-  // INJEKSI TEKSTUR: Memaksa model 3D memakai tekstur gambar Anda
   useEffect(() => {
     scene.traverse((child) => {
       if (child.isMesh) {
@@ -64,8 +62,6 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  
-  // FIX PRESISI TALI: Mengunci tali di ujung atas Hit-Box (Y=1.15)
   useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.15, 0]]);
 
   useEffect(() => {
@@ -89,7 +85,6 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
 
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      // Koordinat tali mengikuti titik atas Hit-Box (Y=1.15)
       const offset = new THREE.Vector3(0, 1.15, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
@@ -113,10 +108,9 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={0.8} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        {/* Hit-Box Fisika: Tinggi 2.3 (Batas atasnya ada di Y=1.15) */}
         <CuboidCollider args={[0.8, 1.15, 0.05]} />
         <group
-          position={[0, -1.05, 0]} // Menggeser visual kartu ke bawah agar jepitannya sejajar dengan ujung Hit-Box
+          position={[0, -1.05, 0]} 
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
           onPointerUp={(e) => (e.target.releasePointerCapture(e.pointerId), drag(false))}
@@ -131,7 +125,17 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
-        <meshLineMaterial color="#cbd5e1" depthTest={false} resolution={[size.width, size.height]} useMap map={texture} repeat={[-4, 1]} lineWidth={3} />
+        {/* FIX: color="white" dan transparent={true} agar warna asli PNG keluar sempurna */}
+        <meshLineMaterial 
+          color="white" 
+          transparent={true}
+          depthTest={false} 
+          resolution={[size.width, size.height]} 
+          useMap 
+          map={texture} 
+          repeat={[-4, 1]} 
+          lineWidth={3} 
+        />
       </mesh>
     </group>
   );
