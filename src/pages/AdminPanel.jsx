@@ -68,7 +68,7 @@ export default function AdminPanel() {
     toast.success("Berhasil logout.");
   };
 
-  // --- FUNGSI CLOUDINARY UPLOAD (GAMBAR) ---
+  // --- FUNGSI CLOUDINARY UPLOAD ---
   const uploadToCloudinary = async (file) => {
     setIsUploading(true);
     const formData = new FormData();
@@ -97,7 +97,6 @@ export default function AdminPanel() {
     }
   };
 
-  // --- FUNGSI CLOUDINARY UPLOAD (AUDIO/MUSIK) ---
   const handleAudioUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -109,7 +108,6 @@ export default function AdminPanel() {
 
     try {
       const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "aj1qdylv";
-      // Perhatikan endpoint menggunakan "/video/upload" karena Cloudinary memproses audio di bawah kategori video
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
         method: 'POST',
         body: formData
@@ -194,13 +192,19 @@ export default function AdminPanel() {
     }
   };
 
+  // PERBAIKAN LOGIKA UPLOAD GAMBAR PROJECT
   const handleProjectImage = async (e, projId, tempId) => {
     const file = e.target.files[0];
     if (!file) return;
     toast.loading("Mengunggah gambar project...", { id: 'proj-img' });
     const url = await uploadToCloudinary(file);
     if (url) {
-      setProjects(projects.map(p => (p.id === projId || p.tempId === tempId) ? { ...p, image: url } : p));
+      setProjects(projects.map(p => {
+        // Logika mutlak: Jika sudah di firebase cek ID, jika baru cek tempId
+        if (projId && p.id === projId) return { ...p, image: url };
+        if (!projId && tempId && p.tempId === tempId) return { ...p, image: url };
+        return p;
+      }));
       toast.success("Gambar terunggah!", { id: 'proj-img' });
     } else {
       toast.dismiss('proj-img');
@@ -281,25 +285,28 @@ export default function AdminPanel() {
     }
   };
 
+  // PERBAIKAN LOGIKA UPLOAD GAMBAR GALLERY
   const handleGalleryImage = async (e, galId, tempId) => {
     const file = e.target.files[0];
     if (!file) return;
     toast.loading("Mengunggah foto ke Cloudinary...", { id: 'gal-img' });
     const url = await uploadToCloudinary(file);
     if (url) {
-      setGallery(gallery.map(g => (g.id === galId || g.tempId === tempId) ? { ...g, url: url } : g));
+      setGallery(gallery.map(g => {
+        if (galId && g.id === galId) return { ...g, url: url };
+        if (!galId && tempId && g.tempId === tempId) return { ...g, url: url };
+        return g;
+      }));
       toast.success("Foto terunggah!", { id: 'gal-img' });
     } else {
       toast.dismiss('gal-img');
     }
   };
 
-  // --- TAMPILAN LOADING ---
   if (isAuthLoading) {
     return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="animate-spin text-[#10b981]" size={48} /></div>;
   }
 
-  // --- TAMPILAN LOGIN ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-6 font-sans">
@@ -320,7 +327,6 @@ export default function AdminPanel() {
     );
   }
 
-  // --- TAMPILAN DASHBOARD ADMIN ---
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
       
@@ -397,7 +403,6 @@ export default function AdminPanel() {
                   <textarea rows="4" value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] focus:ring-1 outline-none"></textarea>
                 </div>
 
-                {/* --- SEKSI UPLOAD MUSIK --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Judul Lagu</label>
@@ -409,7 +414,7 @@ export default function AdminPanel() {
                       <div className="flex items-center gap-3">
                         <label className="cursor-pointer shrink-0 bg-slate-900 hover:bg-slate-800 text-white px-4 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
                           <Music size={16} /> Upload Audio
-                          <input type="file" className="hidden" accept="audio/*" onChange={handleAudioUpload} />
+                          <input type="file" className="hidden" accept=".mp3, .wav, .m4a, audio/*" onChange={handleAudioUpload} />
                         </label>
                         <input type="text" placeholder="Atau paste URL audio..." value={profile.audioUrl || ''} onChange={(e) => setProfile({...profile, audioUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] outline-none text-sm" />
                       </div>
@@ -461,10 +466,10 @@ export default function AdminPanel() {
                   </div>
                   
                   <div className="flex-1 space-y-3">
-                    <input type="text" placeholder="Judul Project" value={proj.title} onChange={(e) => setProjects(projects.map(p => (p.id === proj.id && p.tempId === proj.tempId) ? { ...p, title: e.target.value } : p))} className="w-full font-bold text-lg border-b border-slate-200 pb-1 focus:border-[#10b981] outline-none" />
-                    <input type="text" placeholder="Kategori (Misal: IoT, Web Dev)" value={proj.category} onChange={(e) => setProjects(projects.map(p => (p.id === proj.id && p.tempId === proj.tempId) ? { ...p, category: e.target.value } : p))} className="w-full text-xs font-bold text-slate-500 border-b border-slate-200 pb-1 focus:border-[#10b981] outline-none uppercase tracking-wider" />
-                    <textarea rows="2" placeholder="Deskripsi Singkat" value={proj.desc} onChange={(e) => setProjects(projects.map(p => (p.id === proj.id && p.tempId === proj.tempId) ? { ...p, desc: e.target.value } : p))} className="w-full text-sm text-slate-600 border border-slate-200 rounded p-2 focus:border-[#10b981] outline-none"></textarea>
-                    <input type="text" placeholder="Teknologi (Misal: React, ESP32, Firebase)" value={proj.tech} onChange={(e) => setProjects(projects.map(p => (p.id === proj.id && p.tempId === proj.tempId) ? { ...p, tech: e.target.value } : p))} className="w-full text-xs font-mono text-[#10b981] border border-slate-200 rounded p-2 focus:border-[#10b981] outline-none" />
+                    <input type="text" placeholder="Judul Project" value={proj.title} onChange={(e) => setProjects(projects.map(p => (proj.id ? p.id === proj.id : p.tempId === proj.tempId) ? { ...p, title: e.target.value } : p))} className="w-full font-bold text-lg border-b border-slate-200 pb-1 focus:border-[#10b981] outline-none" />
+                    <input type="text" placeholder="Kategori (Misal: IoT, Web Dev)" value={proj.category} onChange={(e) => setProjects(projects.map(p => (proj.id ? p.id === proj.id : p.tempId === proj.tempId) ? { ...p, category: e.target.value } : p))} className="w-full text-xs font-bold text-slate-500 border-b border-slate-200 pb-1 focus:border-[#10b981] outline-none uppercase tracking-wider" />
+                    <textarea rows="2" placeholder="Deskripsi Singkat" value={proj.desc} onChange={(e) => setProjects(projects.map(p => (proj.id ? p.id === proj.id : p.tempId === proj.tempId) ? { ...p, desc: e.target.value } : p))} className="w-full text-sm text-slate-600 border border-slate-200 rounded p-2 focus:border-[#10b981] outline-none"></textarea>
+                    <input type="text" placeholder="Teknologi (Misal: React, ESP32, Firebase)" value={proj.tech} onChange={(e) => setProjects(projects.map(p => (proj.id ? p.id === proj.id : p.tempId === proj.tempId) ? { ...p, tech: e.target.value } : p))} className="w-full text-xs font-mono text-[#10b981] border border-slate-200 rounded p-2 focus:border-[#10b981] outline-none" />
                   </div>
 
                   <div className="flex md:flex-col gap-3 justify-start items-center md:border-l border-slate-100 md:pl-4">
@@ -490,11 +495,11 @@ export default function AdminPanel() {
 
               {achievements.map((ach) => (
                 <div key={ach.id || ach.tempId} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-4 flex gap-4 items-start">
-                  <input type="text" placeholder="Tahun" value={ach.year} onChange={(e) => setAchievements(achievements.map(a => (a.id === ach.id && a.tempId === ach.tempId) ? { ...a, year: e.target.value } : a))} className="w-24 font-mono font-bold text-[#10b981] border border-slate-200 rounded p-2 text-center focus:border-[#10b981] outline-none" />
+                  <input type="text" placeholder="Tahun" value={ach.year} onChange={(e) => setAchievements(achievements.map(a => (ach.id ? a.id === ach.id : a.tempId === ach.tempId) ? { ...a, year: e.target.value } : a))} className="w-24 font-mono font-bold text-[#10b981] border border-slate-200 rounded p-2 text-center focus:border-[#10b981] outline-none" />
                   
                   <div className="flex-1 space-y-2">
-                    <input type="text" placeholder="Judul Prestasi / Pengalaman" value={ach.title} onChange={(e) => setAchievements(achievements.map(a => (a.id === ach.id && a.tempId === ach.tempId) ? { ...a, title: e.target.value } : a))} className="w-full font-bold text-lg border-b border-slate-200 pb-1 focus:border-[#10b981] outline-none" />
-                    <textarea rows="2" placeholder="Deskripsi Singkat" value={ach.desc} onChange={(e) => setAchievements(achievements.map(a => (a.id === ach.id && a.tempId === ach.tempId) ? { ...a, desc: e.target.value } : a))} className="w-full text-sm text-slate-600 border border-slate-200 rounded p-2 focus:border-[#10b981] outline-none"></textarea>
+                    <input type="text" placeholder="Judul Prestasi / Pengalaman" value={ach.title} onChange={(e) => setAchievements(achievements.map(a => (ach.id ? a.id === ach.id : a.tempId === ach.tempId) ? { ...a, title: e.target.value } : a))} className="w-full font-bold text-lg border-b border-slate-200 pb-1 focus:border-[#10b981] outline-none" />
+                    <textarea rows="2" placeholder="Deskripsi Singkat" value={ach.desc} onChange={(e) => setAchievements(achievements.map(a => (ach.id ? a.id === ach.id : a.tempId === ach.tempId) ? { ...a, desc: e.target.value } : a))} className="w-full text-sm text-slate-600 border border-slate-200 rounded p-2 focus:border-[#10b981] outline-none"></textarea>
                   </div>
 
                   <div className="flex flex-col gap-2">
@@ -529,7 +534,7 @@ export default function AdminPanel() {
                       </label>
                     </div>
                     
-                    <input type="text" placeholder="Caption Foto" value={gal.caption} onChange={(e) => setGallery(gallery.map(g => (g.id === gal.id && g.tempId === gal.tempId) ? { ...g, caption: e.target.value } : g))} className="w-full text-sm font-medium border-b border-slate-200 pb-2 mb-4 focus:border-[#10b981] outline-none" />
+                    <input type="text" placeholder="Caption Foto" value={gal.caption} onChange={(e) => setGallery(gallery.map(g => (gal.id ? g.id === gal.id : g.tempId === gal.tempId) ? { ...g, caption: e.target.value } : g))} className="w-full text-sm font-medium border-b border-slate-200 pb-2 mb-4 focus:border-[#10b981] outline-none" />
                     
                     <div className="flex justify-end gap-2 mt-auto">
                       <button onClick={() => handleDeleteGallery(gal.id, gal.tempId)} className="bg-rose-100 hover:bg-rose-200 text-rose-600 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 text-sm"><Trash2 size={14}/> Hapus</button>
