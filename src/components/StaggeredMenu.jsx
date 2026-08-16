@@ -10,13 +10,13 @@ export const StaggeredMenu = ({
   displaySocials = true,
   displayItemNumbering = true,
   className,
-  logoUrl = '/src/assets/logos/reactbits-gh-white.svg',
   menuButtonColor = '#fff',
   openMenuButtonColor = '#fff',
   accentColor = '#5227FF',
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
+  darkMode = false, // <-- MENERIMA STATUS DARK MODE
   onMenuOpen,
   onMenuClose
 }) => {
@@ -357,6 +357,35 @@ export const StaggeredMenu = ({
       data-position={position}
       data-open={open || undefined}
     >
+      
+      {/* SUNTIKAN CSS MUTLAK UNTUK DARK MODE */}
+      {/* Ini akan otomatis mengubah seluruh warna menu panel tanpa perlu mengedit file CSS lagi! */}
+      <style>{`
+        .staggered-menu-panel {
+          background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
+          border-left: 1px solid ${darkMode ? '#1e293b' : '#f1f5f9'} !important;
+        }
+        .sm-panel-item {
+          color: ${darkMode ? '#f8fafc' : '#0f172a'} !important;
+        }
+        .sm-panel-item:hover {
+          color: ${accentColor} !important;
+        }
+        .sm-socials-title {
+          color: ${accentColor} !important;
+        }
+        .sm-socials-link {
+          color: ${darkMode ? '#94a3b8' : '#475569'} !important;
+        }
+        .sm-socials-link:hover {
+          color: ${accentColor} !important;
+        }
+        .sm-panel-list[data-numbering] .sm-panel-item::after {
+          color: ${accentColor} !important;
+          opacity: 0.5 !important;
+        }
+      `}</style>
+
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
           const raw = colors && colors.length ? colors.slice(0, 4) : ['#1e1e22', '#35353c'];
@@ -369,17 +398,37 @@ export const StaggeredMenu = ({
         })()}
       </div>
 
-      {/* FIX UTAMA: Efek Kaca Buram (Glassmorphism) yang dikunci (Fixed) di atas dengan dukungan Dark Mode */}
+      {/* HEADER FIXED DENGAN WARNA ADAPTIF KACA BURAM */}
       <header 
-        className="fixed top-0 left-0 w-full flex justify-between items-center px-6 md:px-12 py-5 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300 pointer-events-auto" 
-        style={{ zIndex: 50 }}
+        className="staggered-menu-header" 
         aria-label="Main navigation header"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.25rem 2rem',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          pointerEvents: 'auto',
+          zIndex: 60,
+          transition: 'background-color 0.3s ease, border-color 0.3s ease',
+          backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+          borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)'
+        }}
       >
-        
-        {/* Teks Logo Adaptif Terhadap Dark Mode */}
-        <div className="flex items-center gap-2" aria-label="Logo">
-          <div className="w-3 h-3 bg-[#10b981] rounded-full"></div>
-          <span className="text-xl font-bold text-slate-900 dark:text-white tracking-wide transition-colors duration-300">
+        <div className="sm-logo" aria-label="Logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
+          <span style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '900', 
+            letterSpacing: '-0.05em',
+            transition: 'color 0.3s ease',
+            color: darkMode ? '#ffffff' : '#0f172a'
+          }}>
             IMAM.dev
           </span>
         </div>
@@ -392,19 +441,18 @@ export const StaggeredMenu = ({
           aria-controls="staggered-menu-panel"
           onClick={toggleMenu}
           type="button"
+          style={{ padding: '0.5rem' }}
         >
           <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true">
             <span ref={textInnerRef} className="sm-toggle-textInner">
               {textLines.map((l, i) => (
-                <span className="sm-toggle-line" key={i}>
-                  {l}
-                </span>
+                <span className="sm-toggle-line" key={i}>{l}</span>
               ))}
             </span>
           </span>
           <span ref={iconRef} className="sm-icon" aria-hidden="true">
-            <span ref={plusHRef} className="sm-icon-line" />
-            <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" />
+            <span ref={plusHRef} className="sm-icon-line" style={{ backgroundColor: 'currentColor' }}/>
+            <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ backgroundColor: 'currentColor' }}/>
           </span>
         </button>
       </header>
@@ -429,7 +477,6 @@ export const StaggeredMenu = ({
             )}
           </ul>
           
-          {/* Menu Bawah: Socials & Admin Mode */}
           <div style={{ marginTop: 'auto' }}>
             {displaySocials && socialItems && socialItems.length > 0 && (
               <div className="sm-socials" aria-label="Social links">
@@ -446,7 +493,12 @@ export const StaggeredMenu = ({
               </div>
             )}
             
-            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1.5rem' }}>
+            {/* Tombol Admin Mode yang warnanya beradaptasi */}
+            <div style={{ 
+              marginTop: '2rem', 
+              paddingTop: '1.5rem',
+              borderTop: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)', 
+            }}>
               <a 
                 href="/admin" 
                 style={{ 
