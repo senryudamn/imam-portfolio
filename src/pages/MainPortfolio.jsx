@@ -38,10 +38,9 @@ export default function MainPortfolio() {
     window.location.href = '/admin';
   };
 
-  // Simulasi kirim pesan
   const handleSendMessage = (e) => {
     e.preventDefault();
-    alert("Pesan Anda telah terkirim! (Ini adalah simulasi tampilan)");
+    alert("Pesan Anda telah terkirim! (Ini adalah simulasi)");
     e.target.reset();
   };
 
@@ -167,69 +166,80 @@ export default function MainPortfolio() {
         </div>
       </section>
 
-      {/* CONTACT & LANYARD SECTION (TATA LETAK KIRI KANAN) */}
+      {/* CONTACT & LANYARD SECTION */}
       <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
         <div className="max-w-7xl mx-auto px-6 z-20 relative">
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* JUDUL DI ATAS TENGAH PERSIS SEPERTI GAMBAR ANDA */}
+          <div className="text-center mb-16">
+            <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">
+              Let's Work <span className="text-[#10b981]">Together</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              Reach out via email or drag the ID card below to connect!
+            </p>
+          </div>
+
+          {/* DIBAGI 2 KOLOM (KIRI LANYARD, KANAN HUBUNGI) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
             
             {/* BAGIAN KIRI: Lanyard 3D */}
-            <div className="w-full h-[600px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/30 rounded-3xl border border-white/5">
-               <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} frontImage={profile.avatar} />
+            <div className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/50 rounded-3xl border border-white/5 shadow-inner">
+               <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
                <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">
                  &lt; Drag ID Card /&gt;
                </p>
             </div>
 
-            {/* BAGIAN KANAN: Formulir Chat/Pesan & Teks */}
-            <div className="flex flex-col justify-center">
-              <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">Let's Work <br/><span className="text-[#10b981]">Together</span></h2>
-              <p className="text-slate-400 text-lg mb-10 max-w-md">
-                Punya ide proyek atau pertanyaan? Kirim pesan langsung melalui form di bawah ini.
-              </p>
-
-              {/* FORMULIR CHAT */}
-              <form onSubmit={handleSendMessage} className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-300 mb-2 pl-1">Nama</label>
-                    <input 
-                      type="text" 
-                      placeholder="Masukkan nama" 
-                      className="w-full bg-[#1e293b] border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
-                      required 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-300 mb-2 pl-1">Email</label>
-                    <input 
-                      type="email" 
-                      placeholder="Masukkan email" 
-                      className="w-full bg-[#1e293b] border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
-                      required 
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-300 mb-2 pl-1">Pesan / Chat</label>
-                  <textarea 
-                    rows="4" 
-                    placeholder="Halo Imam, saya tertarik untuk..." 
-                    className="w-full bg-[#1e293b] border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all resize-none" 
-                    required
-                  ></textarea>
-                </div>
+            {/* BAGIAN KANAN: Formulir Chat/Hubungi */}
+            <div className="bg-[#1e293b]/30 p-8 md:p-10 rounded-3xl border border-white/5 flex flex-col h-[550px] justify-between shadow-2xl">
+              <div>
+                <h3 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+                  <Send className="text-[#10b981]" /> Hubungi Saya
+                </h3>
                 
-                <button type="submit" className="bg-[#10b981] text-white font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 w-full sm:w-auto">
-                  <Send size={20} /> Kirim Pesan
-                </button>
-              </form>
+                <form onSubmit={handleSendMessage} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Nama</label>
+                      <input 
+                        type="text" 
+                        placeholder="Nama Anda" 
+                        className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
+                        required 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Email</label>
+                      <input 
+                        type="email" 
+                        placeholder="Email Anda" 
+                        className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all" 
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Pesan / Penawaran</label>
+                    <textarea 
+                      rows="4" 
+                      placeholder="Tuliskan pesan Anda di sini..." 
+                      className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all resize-none" 
+                      required
+                    ></textarea>
+                  </div>
+                  
+                  <button type="submit" className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 w-full mt-2">
+                    Kirim Pesan Sekarang
+                  </button>
+                </form>
+              </div>
 
-              {/* SOCIAL MEDIA LINKS */}
-              <div className="flex gap-6 mt-12 text-slate-400 font-semibold tracking-widest text-sm uppercase pt-8 border-t border-slate-800">
-                {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer" className="hover:text-white transition">LinkedIn</a>}
-                {profile.github && <a href={profile.github} target="_blank" rel="noreferrer" className="hover:text-white transition">GitHub</a>}
-                {profile.email && <a href={`mailto:${profile.email}`} className="hover:text-white transition">Email</a>}
+              {/* SOCIAL MEDIA LINKS DI BAGIAN BAWAH FORM */}
+              <div className="flex gap-6 mt-6 text-slate-500 font-bold tracking-widest text-sm uppercase justify-center pt-6 border-t border-slate-700/30">
+                {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition">LinkedIn</a>}
+                {profile.github && <a href={profile.github} target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition">GitHub</a>}
+                {profile.email && <a href={`mailto:${profile.email}`} className="hover:text-[#10b981] transition">Email</a>}
               </div>
             </div>
 
