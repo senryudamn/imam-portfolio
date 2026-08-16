@@ -5,17 +5,17 @@ import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphe
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-// Menggunakan nama file sesuai standar dokumentasi template
-import cardGLB from './card.glb'; 
-import lanyardPNG from './lanyard.png';
+import cardGLB from './card.glb';
+import lanyardPNG from './lanyard.png'; 
+import cardTexture from './texture.png'; // Tekstur bergambar foto Anda
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
-export default function Lanyard({ position = [0, 0, 20], gravity = [0, -40, 0], fov = 25 }) {
+export default function Lanyard({ position = [0, 0, 15], gravity = [0, -40, 0], fov = 25 }) {
   return (
     <Canvas camera={{ position: position, fov: fov }} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
       <ambientLight intensity={Math.PI} />
-      <Physics gravity={gravity} timeStep={1 / 60}>
+      <Physics gravity={gravity} timeStep={1/60}>
         <Band />
       </Physics>
       <Environment blur={0.75}>
@@ -37,8 +37,24 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
 
   const { scene } = useGLTF(cardGLB);
   const texture = useTexture(lanyardPNG);
+  
+  // Memuat dan menerapkan tekstur foto Anda secara otomatis lewat kode
+  const customTex = useTexture(cardTexture);
+  customTex.flipY = false; 
+  customTex.colorSpace = THREE.SRGBColorSpace;
 
-  // Membuat kurva tali yang mulus dan tidak kaku
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          map: customTex,
+          roughness: 0.3,
+          metalness: 0.1
+        });
+      }
+    });
+  }, [scene, customTex]);
+
   const [curve] = useState(() => new THREE.CatmullRomCurve3([
     new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
   ]));
@@ -46,11 +62,12 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   const [dragged, drag] = useState(false);
   const [hovered, hover] = useState(false);
 
-  // Sendi fisika tali (Rope dan Spherical Joint)
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.2, 0]]);
+  
+  // FIX PRESISI TALI: Mengaitkan ujung tali tepat di ujung penjepit besi atas (Y = 2.15)
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 2.15, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -73,9 +90,9 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
 
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      const offset = new THREE.Vector3(0, 1.2, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      // Mengikuti rotasi ujung besi penjepit atas secara presisi
+      const offset = new THREE.Vector3(0, 2.15, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
-      // Menggambar ulang garis tali mengikuti titik fisika agar tidak terputus
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
       curve.points[2].copy(j1.current.lerped);
@@ -97,7 +114,8 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
       <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={2} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        <CuboidCollider args={[0.8, 1.15, 0.05]} />
+        {/* Hitbox disesuaikan agar pas menutupi seluruh bodi kartu dan besi penjepitnya */}
+        <CuboidCollider args={[0.8, 1.8, 0.05]} />
         <group
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
@@ -107,6 +125,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
+          {/* Posisi [0, -1.2, 0] membuat kartu tepat berada di tengah sumbu gantung */}
           <primitive object={scene} scale={0.8} position={[0, -1.2, 0]} />
         </group>
       </RigidBody>
