@@ -127,10 +127,11 @@ export default function MainPortfolio() {
         displaySocials={true}
         displayItemNumbering={true}
         isFixed={true}
-        menuButtonColor="#10b981" 
+        darkMode={darkMode} // <-- MENGIRIM STATUS MODE GELAP KE MENU
+        menuButtonColor={darkMode ? "#10b981" : "#0f172a"} 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
-        colors={darkMode ? ['#0f172a', '#1e293b'] : ['#ffffff', '#f8fafc']} 
+        colors={darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']} // <-- BLOK ANIMASI IKUT GELAP
         accentColor="#10b981" 
       />
 
