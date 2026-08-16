@@ -35,7 +35,7 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   // canSleep: false memastikan objek tidak lenyap saat didiamkan atau ditarik jauh
   const segmentProps = { type: 'dynamic', canSleep: false, colliders: false, angularDamping: 0.8, linearDamping: 1.5 };
 
-  // Hanya memanggil scene murni dari GLB Anda (Pastikan file umbrella.glb ada di folder yang sama)
+  // Hanya memanggil scene murni dari GLB Anda (Pastikan file umbrella.glb yang sudah Anda edit ada di folder yang sama)
   const { scene } = useGLTF(umbrellaGLB);
   const texture = useTexture(lanyard);
 
@@ -48,8 +48,8 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]);
   
-  // Mengunci pangkal tali di sumbu Y atas (Titik lubang kartu)
-  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.4, 0]]);
+  // FIX MUTLAK: Mengunci pangkal tali tepat di titik koordinat lubang besi kartu (Y = 1.05)
+  useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.05, 0]]);
 
   useEffect(() => {
     if (hovered) { document.body.style.cursor = dragged ? 'grabbing' : 'grab'; return () => void (document.body.style.cursor = 'auto'); }
@@ -72,8 +72,9 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
 
       const cardPos = card.current.translation();
       const cardRot = card.current.rotation();
-      // Offset koordinat jepitan tali disamakan dengan spherical joint [0, 1.4, 0]
-      const offset = new THREE.Vector3(0, 1.4, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
+      
+      // FIX MUTLAK: Tali menempel dan mengikuti perputaran lubang kartu (Y = 1.05)
+      const offset = new THREE.Vector3(0, 1.05, 0).applyQuaternion(new THREE.Quaternion(cardRot.x, cardRot.y, cardRot.z, cardRot.w));
       
       curve.points[0].copy(new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset));
       curve.points[1].copy(j2.current.lerped);
@@ -81,8 +82,9 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       curve.points[3].copy(fixed.current.translation());
       band.current.geometry.setPoints(curve.getPoints(32));
       
+      // Memberikan efek putaran lembut, kartu akan perlahan selalu berusaha menghadap ke depan
       ang.copy(card.current.angvel()); rot.copy(card.current.rotation());
-      card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z });
+      card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.15, z: ang.z });
     }
   });
 
@@ -95,8 +97,9 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
       <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
       <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps}><BallCollider args={[0.1]} /></RigidBody>
 
-      <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={0.8} type={dragged ? 'kinematicPosition' : 'dynamic'}>
-        <CuboidCollider args={[0.8, 1.2, 0.05]} />
+      <RigidBody position={[2, 0, 0]} ref={card} {...segmentProps} angularDamping={0.6} type={dragged ? 'kinematicPosition' : 'dynamic'}>
+        {/* Ukuran hit-box benturan disesuaikan dengan kartu baru */}
+        <CuboidCollider args={[0.8, 1.15, 0.05]} />
         <group
           onPointerOver={() => hover(true)}
           onPointerOut={() => hover(false)}
@@ -106,20 +109,18 @@ function Band({ maxSpeed = 50, minSpeed = 10 }) {
             drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
           )}
         >
-          {/* 
-            FIX: Skala dikecilkan drastis menjadi 0.8 agar proporsional,
-            dan Center otomatis meletakkannya tepat di titik pusat koordinat fisika 
-          */}
-          <Center>
+          {/* FIX MUTLAK: Center 'top' memaksa ujung tertinggi kartu berada di Y=0, lalu kita angkat ke Y=1.2. 
+              Ini membuat titik tali (1.05) jatuh tepat 100% melubangi besi jepitannya! */}
+          <Center top position={[0, 1.2, 0]}>
             <primitive object={scene} scale={0.8} />
           </Center>
         </group>
       </RigidBody>
       
-      {/* Tali Lanyard yang anti-hilang */}
+      {/* Tali Lanyard anti-hilang */}
       <mesh ref={band} frustumCulled={false}>
         <meshLineGeometry />
-        <meshLineMaterial color="#cbd5e1" depthTest={false} resolution={[size.width, size.height]} useMap map={texture} repeat={[-4, 1]} lineWidth={3} />
+        <meshLineMaterial color="#cbd5e1" depthTest={false} resolution={[size.width, size.height]} useMap map={texture} repeat={[-4, 1]} lineWidth={2.5} />
       </mesh>
     </group>
   );
