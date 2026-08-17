@@ -11,7 +11,7 @@ import TextType from '../components/TextType';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-// --- KOMPONEN PEMUTAR MUSIK MELAYANG ---
+// --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
@@ -111,7 +111,6 @@ export default function MainPortfolio() {
   const [activeView, setActiveView] = useState('home'); 
   const [selectedProject, setSelectedProject] = useState(null);
   
-  // STATE MENDETEKSI MENU
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
@@ -232,6 +231,7 @@ export default function MainPortfolio() {
     return (
       <div style={{ backgroundColor: darkMode ? '#0f172a' : '#fcfcfc' }} className="min-h-screen flex flex-col items-center justify-center transition-colors duration-300">
         <div className="flex flex-col items-center justify-center">
+          
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -246,6 +246,7 @@ export default function MainPortfolio() {
               _
             </motion.span>
           </motion.div>
+          
           <div className="flex items-center ml-2">
             {loadingText.split('').map((char, index) => (
               <motion.span
@@ -259,6 +260,7 @@ export default function MainPortfolio() {
               </motion.span>
             ))}
           </div>
+
           <motion.div 
             className="w-32 h-[2px] bg-[#10b981]/10 mt-6 relative overflow-hidden rounded-full"
             initial={{ opacity: 0 }}
@@ -272,6 +274,7 @@ export default function MainPortfolio() {
               transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
             />
           </motion.div>
+
         </div>
       </div>
     );
@@ -361,7 +364,6 @@ export default function MainPortfolio() {
       className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10"
     >
 
-      {/* OVERLAY BLUR: MUNCUL SAAT MENU DIBUKA */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -373,7 +375,6 @@ export default function MainPortfolio() {
           />
         )}
       </AnimatePresence>
-      {/* -------------------------------------- */}
 
       <FloatingMusicPlayer 
         audioUrl={profile.audioUrl} 
@@ -382,7 +383,6 @@ export default function MainPortfolio() {
         theme={theme} 
       />
 
-      {/* STAGGERED MENU */}
       <StaggeredMenu
         position="right"
         items={menuItems}
@@ -398,6 +398,9 @@ export default function MainPortfolio() {
         menuButtonColor={darkMode ? "#10b981" : "#0f172a"} 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
+        
+        // PENGATURAN WARNA MENU DIUBAH KE BALIKANNYA 
+        // Jika web Gelap -> Menu Putih. Jika web Terang -> Menu Gelap.
         colors={darkMode ? ['#ffffff', '#f1f5f9'] : ['#0f172a', '#1e293b']} 
         accentColor="#10b981" 
       />
@@ -685,18 +688,19 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* SEKSI KONTAK DIPERBARUI AGAR MENYESUAIKAN TEMA TERANG/GELAP */}
+            {/* SEKSI KONTAK DIUBAH AGAR BACKGROUND-NYA BERKEBALIKAN DENGAN TEMA */}
             <section 
               id="contact" 
               className="w-full pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981] transition-colors duration-300"
-              style={{ backgroundColor: darkMode ? '#0f172a' : '#f8fafc' }}
+              style={{ backgroundColor: darkMode ? '#ffffff' : '#0f172a' }} // <-- Berubah kebalikannya
             >
               <div className="max-w-7xl mx-auto px-6 z-20 relative">
                 <div className="text-center mb-16">
-                  <h2 style={{ color: theme.mainText }} className="text-5xl md:text-7xl font-black mb-4 tracking-tighter transition-colors">
+                  {/* Teks warna disesuaikan juga agar kontras */}
+                  <h2 style={{ color: darkMode ? '#0f172a' : '#ffffff' }} className="text-5xl md:text-7xl font-black mb-4 tracking-tighter transition-colors">
                     Let's Work <span className="text-[#10b981]">Together</span>
                   </h2>
-                  <p style={{ color: theme.mutedText }} className="text-lg max-w-xl mx-auto transition-colors">
+                  <p style={{ color: darkMode ? '#64748b' : '#94a3b8' }} className="text-lg max-w-xl mx-auto transition-colors">
                     Reach out via email or drag the ID card below to connect!
                   </p>
                 </div>
@@ -704,55 +708,73 @@ export default function MainPortfolio() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
                   <div 
                     className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center rounded-[2rem] shadow-inner transition-colors border"
-                    style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}
+                    style={{ 
+                      backgroundColor: darkMode ? '#f1f5f9' : '#1e293b', 
+                      borderColor: darkMode ? '#e2e8f0' : '#334155' 
+                    }}
                   >
                     <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
-                    <p style={{ color: theme.mutedText }} className="absolute bottom-6 font-mono text-xs tracking-widest uppercase transition-colors">
+                    <p style={{ color: darkMode ? '#94a3b8' : '#64748b' }} className="absolute bottom-6 font-mono text-xs tracking-widest uppercase transition-colors">
                       &lt; Drag ID Card /&gt;
                     </p>
                   </div>
 
                   <div 
                     className="p-8 md:p-10 rounded-[2rem] flex flex-col h-[550px] justify-between shadow-2xl transition-colors border"
-                    style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}
+                    style={{ 
+                      backgroundColor: darkMode ? '#f8fafc' : '#1e293b', 
+                      borderColor: darkMode ? '#e2e8f0' : '#334155' 
+                    }}
                   >
                     <div>
-                      <h3 style={{ color: theme.mainText }} className="text-2xl font-bold mb-6 flex items-center gap-3 transition-colors">
+                      <h3 style={{ color: darkMode ? '#0f172a' : '#ffffff' }} className="text-2xl font-bold mb-6 flex items-center gap-3 transition-colors">
                         <Send className="text-[#10b981]" /> Hubungi Saya
                       </h3>
                       <form onSubmit={handleSendMessage} className="space-y-5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <div>
-                            <label style={{ color: theme.mutedText }} className="block text-sm font-bold mb-2 pl-1 transition-colors">Nama</label>
+                            <label style={{ color: darkMode ? '#64748b' : '#94a3b8' }} className="block text-sm font-bold mb-2 pl-1 transition-colors">Nama</label>
                             <input 
                               type="text" 
                               name="name" 
                               placeholder="Nama Anda" 
                               className="w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:border-[#10b981] transition-all" 
-                              style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mainText, borderColor: theme.cardBorder }}
+                              style={{ 
+                                backgroundColor: darkMode ? '#ffffff' : '#0f172a', 
+                                color: darkMode ? '#0f172a' : '#ffffff', 
+                                borderColor: darkMode ? '#e2e8f0' : '#334155' 
+                              }}
                               required 
                             />
                           </div>
                           <div>
-                            <label style={{ color: theme.mutedText }} className="block text-sm font-bold mb-2 pl-1 transition-colors">Email</label>
+                            <label style={{ color: darkMode ? '#64748b' : '#94a3b8' }} className="block text-sm font-bold mb-2 pl-1 transition-colors">Email</label>
                             <input 
                               type="email" 
                               name="email" 
                               placeholder="Email Anda" 
                               className="w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:border-[#10b981] transition-all" 
-                              style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mainText, borderColor: theme.cardBorder }}
+                              style={{ 
+                                backgroundColor: darkMode ? '#ffffff' : '#0f172a', 
+                                color: darkMode ? '#0f172a' : '#ffffff', 
+                                borderColor: darkMode ? '#e2e8f0' : '#334155' 
+                              }}
                               required 
                             />
                           </div>
                         </div>
                         <div>
-                          <label style={{ color: theme.mutedText }} className="block text-sm font-bold mb-2 pl-1 transition-colors">Pesan</label>
+                          <label style={{ color: darkMode ? '#64748b' : '#94a3b8' }} className="block text-sm font-bold mb-2 pl-1 transition-colors">Pesan</label>
                           <textarea 
                             rows="4" 
                             name="message" 
                             placeholder="Tuliskan pesan Anda..." 
                             className="w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:border-[#10b981] transition-all resize-none" 
-                            style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mainText, borderColor: theme.cardBorder }}
+                            style={{ 
+                              backgroundColor: darkMode ? '#ffffff' : '#0f172a', 
+                              color: darkMode ? '#0f172a' : '#ffffff', 
+                              borderColor: darkMode ? '#e2e8f0' : '#334155' 
+                            }}
                             required
                           ></textarea>
                         </div>
@@ -762,7 +784,7 @@ export default function MainPortfolio() {
                       </form>
                     </div>
 
-                    <div className="flex gap-6 mt-6 font-bold tracking-widest text-sm uppercase justify-center pt-6 border-t transition-colors" style={{ borderColor: theme.cardBorder, color: theme.mutedText }}>
+                    <div className="flex gap-6 mt-6 font-bold tracking-widest text-sm uppercase justify-center pt-6 border-t transition-colors" style={{ borderColor: darkMode ? '#e2e8f0' : '#334155', color: darkMode ? '#64748b' : '#94a3b8' }}>
                       {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition">LinkedIn</a>}
                       {profile.github && <a href={profile.github} target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition">GitHub</a>}
                     </div>
