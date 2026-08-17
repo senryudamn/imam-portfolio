@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
-import TextType from '../components/TextType'; // <-- IMPORT TEXT TYPE DI SINI
-import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
+import TextType from '../components/TextType'; 
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -164,11 +164,15 @@ export default function MainPortfolio() {
               isLoaded: true 
             });
           } else {
+            // Jika limit API Github habis
             setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
           }
         } catch (ghError) {
+          // Jika gagal terkoneksi internet ke Github
           setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
         }
+        // -------------------------------------
+
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
@@ -224,6 +228,7 @@ export default function MainPortfolio() {
     );
   }
 
+  // Gunakan logika pembersihan yang sama untuk username di bagian Chart
   const rawGithubUrl = profile?.github || 'https://github.com/senryudamn';
   const githubUsername = rawGithubUrl.replace(/\/$/, '').split('/').pop();
   
@@ -425,28 +430,22 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* NEW: ABOUT SECTION DENGAN EFEK TYPEWRITER */}
+            {/* NEW: ABOUT SECTION DENGAN EFEK TYPEWRITER (DIJADIKAN STRING TUNGGAL AGAR TIDAK DIHAPUS) */}
             <section 
               id="about" 
               className="py-32 px-6 sm:px-12 max-w-5xl mx-auto text-center flex items-center justify-center min-h-[50vh] border-t" 
               style={{ borderColor: theme.cardBorder }}
             >
               <TextType
-                // Mengambil kalimat dari Admin Panel, dipisahkan berdasarkan baris baru (Enter)
                 text={
-                  profile.aboutTexts 
-                    ? profile.aboutTexts.split('\n').filter(t => t.trim() !== '') 
-                    : [
-                        "I build fullstack web systems", 
-                        "with clean user interfaces", 
-                        "and database-driven workflows"
-                      ]
+                  profile.aboutTexts || 
+                  "I build fullstack web systems\nwith clean user interfaces\nand database-driven workflows"
                 }
-                typingSpeed={75}
+                typingSpeed={50}
                 pauseDuration={1500}
                 showCursor={true}
                 cursorCharacter="_"
-                deletingSpeed={50}
+                loop={false}
                 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight"
                 style={{ color: theme.mainText }}
               />
