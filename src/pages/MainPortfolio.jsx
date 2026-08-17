@@ -5,7 +5,7 @@ import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '..
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
-import ScrollVelocity from '../components/ScrollVelocity'; // Import komponen baru
+import ScrollVelocity from '../components/ScrollVelocity'; 
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -50,9 +50,9 @@ export default function MainPortfolio() {
   const [profile, setProfile] = useState({});
   const [projects, setProjects] = useState([]);
   const [achievements, setAchievements] = useState([]);
-  const [gallery, setGallery] = useState([]); // Menampung data galeri
+  const [gallery, setGallery] = useState([]); 
   
-  // STATE DARK MODE (Default dari LocalStorage)
+  // STATE DARK MODE
   const [darkMode, setDarkMode] = useState(false);
   
   // STATE VIRTUAL ROUTING
@@ -82,7 +82,7 @@ export default function MainPortfolio() {
         setProfile(await fetchProfile());
         setProjects(await fetchProjects());
         setAchievements(await fetchAchievements());
-        setGallery(await fetchGallery()); // Eksekusi penarikan data galeri dari Firebase
+        setGallery(await fetchGallery());
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
@@ -142,7 +142,7 @@ export default function MainPortfolio() {
     { label: 'Home', ariaLabel: 'Go to home page', link: '#about' },
     { label: 'Projects', ariaLabel: 'View our projects', link: '#projects-all' },
     { label: 'Experience', ariaLabel: 'View my experience', link: '#achievements' },
-    { label: 'Gallery', ariaLabel: 'View photo gallery', link: '#gallery' }, // Link menuju galeri ditambahkan
+    { label: 'Gallery', ariaLabel: 'View photo gallery', link: '#gallery' }, 
     { label: 'Contact', ariaLabel: 'Get in touch', link: '#contact' }
   ];
 
@@ -167,9 +167,9 @@ export default function MainPortfolio() {
       onClick={() => openProjectDetail(proj)}
       whileHover={{ y: -8 }} 
       style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
-      className="border p-6 flex flex-col group shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl cursor-pointer"
+      className="border p-6 flex flex-col group shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl cursor-pointer"
     >
-      <div style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9' }} className="h-64 overflow-hidden mb-6 relative rounded-xl transition-colors">
+      <div style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9' }} className="h-64 overflow-hidden mb-6 relative rounded-2xl transition-colors">
         <img src={proj.image || (proj.images && proj.images[0])} alt={proj.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
       </div>
       <div className="flex-1 flex flex-col">
@@ -181,7 +181,7 @@ export default function MainPortfolio() {
         <p style={{ color: theme.mutedText }} className="mb-6 line-clamp-3 leading-relaxed transition-colors">{proj.desc}</p>
         <div className="mt-auto flex flex-wrap gap-2">
           {(proj.tech || "").split(',').map((tech, idx) => (
-            <span key={idx} style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mutedText, borderColor: theme.cardBorder }} className="text-xs font-mono font-bold px-3 py-1 rounded border transition-colors">{tech.trim()}</span>
+            <span key={idx} style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mutedText, borderColor: theme.cardBorder }} className="text-xs font-mono font-bold px-3 py-1 rounded-lg border transition-colors">{tech.trim()}</span>
           ))}
         </div>
       </div>
@@ -200,10 +200,8 @@ export default function MainPortfolio() {
         {darkMode ? <Sun size={20} /> : <Moon size={20} />}
       </button>
 
-      {/* PEMUTAR MUSIK */}
       <FloatingMusicPlayer audioUrl={profile.audioUrl} title={profile.audioTitle} darkMode={darkMode} theme={theme} />
 
-      {/* MENU NAVIGASI */}
       <StaggeredMenu
         position="right"
         items={menuItems}
@@ -241,9 +239,9 @@ export default function MainPortfolio() {
                 </div>
               </div>
               <div className="flex-1 flex justify-center lg:justify-end">
-                <div style={{ backgroundColor: darkMode ? '#0f172a' : '#e2e8f0' }} className="w-72 h-96 relative p-2 shadow-2xl rounded-2xl transition-colors">
-                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover grayscale border rounded-xl" style={{ borderColor: theme.cardBorder }} />
-                  <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="absolute -bottom-4 -left-4 p-3 shadow-lg border flex items-center gap-2 rounded-lg transition-colors">
+                <div style={{ backgroundColor: darkMode ? '#0f172a' : '#e2e8f0' }} className="w-72 h-96 relative p-2 shadow-2xl rounded-[2rem] transition-colors">
+                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover grayscale border rounded-[1.5rem]" style={{ borderColor: theme.cardBorder }} />
+                  <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="absolute -bottom-4 -left-4 p-3 shadow-lg border flex items-center gap-2 rounded-xl transition-colors">
                     <div className="w-2 h-2 bg-[#10b981] rounded-full animate-pulse"></div>
                     <span style={{ color: theme.mainText }} className="text-xs font-bold font-mono transition-colors">AVAILABLE FOR WORK</span>
                   </div>
@@ -251,10 +249,78 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            <section className="py-16 px-6 sm:px-12 max-w-7xl mx-auto border-t" style={{ borderColor: theme.cardBorder }}>
-              <h2 style={{ color: theme.mutedText }} className="text-sm font-bold tracking-widest uppercase mb-8 transition-colors">Github Contributions</h2>
-              <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="p-8 border shadow-sm overflow-x-auto rounded-xl transition-colors">
-                <img src={`https://ghchart.rshah.org/10b981/${githubUsername}`} alt="GitHub Chart" className="min-w-[700px] w-full mx-auto" />
+            {/* DESAIN BARU GITHUB CONTRIBUTIONS */}
+            <section className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t relative overflow-hidden" style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}>
+              
+              {/* Teks Watermark Besar di Belakang */}
+              <div className="absolute top-16 left-0 w-full overflow-hidden flex justify-center pointer-events-none select-none z-0">
+                <span className="text-[8rem] md:text-[14rem] font-black tracking-tighter whitespace-nowrap transition-colors" style={{ color: theme.mainText, opacity: darkMode ? 0.03 : 0.04 }}>
+                  CONTRIBUTIONS
+                </span>
+              </div>
+
+              <div className="relative z-10">
+                {/* Header Bagian Atas */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+                  <div>
+                    <p style={{ color: theme.mutedText }} className="text-sm font-bold tracking-widest uppercase mb-2">Coding Activity</p>
+                    <h2 style={{ color: theme.mainText }} className="text-4xl md:text-5xl font-black tracking-tight uppercase">GitHub Contributions</h2>
+                  </div>
+                  <p style={{ color: theme.mutedText }} className="max-w-sm text-left md:text-right font-medium">
+                    Open-source activity tracker showing commits, pull requests, and code reviews.
+                  </p>
+                </div>
+
+                {/* Grid Layout GitHub */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Kolom Kiri: Kartu Statistik */}
+                  <div className="lg:col-span-4 flex flex-col gap-6">
+                    <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-8 flex-1 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
+                      <p style={{ color: theme.mutedText }} className="text-xs font-bold tracking-widest uppercase mb-4">Last 365 Days</p>
+                      <h3 style={{ color: theme.mainText }} className="text-6xl md:text-7xl font-black mb-2 tracking-tighter">997</h3>
+                      <p style={{ color: theme.mutedText }} className="text-sm font-medium">contributions in the last year</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
+                        <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Longest Streak</p>
+                        <h4 style={{ color: theme.mainText }} className="text-2xl font-black">10 days</h4>
+                      </div>
+                      <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
+                        <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Active Days</p>
+                        <h4 style={{ color: theme.mainText }} className="text-2xl font-black">64%</h4>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kolom Kanan: Chart Graph */}
+                  <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="lg:col-span-8 border rounded-[2rem] p-8 shadow-sm flex flex-col justify-between transition-colors hover:shadow-md">
+                    <div className="overflow-x-auto pb-6 hide-scrollbar flex items-center justify-center flex-1">
+                      <img 
+                        src={`https://ghchart.rshah.org/10b981/${githubUsername}`} 
+                        alt="GitHub Chart" 
+                        className="min-w-[600px] w-full"
+                        style={{ opacity: darkMode ? 0.9 : 1 }} 
+                      />
+                    </div>
+                    
+                    {/* Bagian Bawah Chart: Username & Legend */}
+                    <div className="mt-4 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center transition-colors" style={{ borderColor: theme.cardBorder }}>
+                      <span style={{ color: theme.mutedText }} className="text-sm font-mono font-medium">@{githubUsername}</span>
+                      <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.mutedText }}>
+                        <span>Less</span>
+                        <span className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-700"></span>
+                        <span className="w-3 h-3 rounded-sm bg-[#10b981]/40"></span>
+                        <span className="w-3 h-3 rounded-sm bg-[#10b981]/60"></span>
+                        <span className="w-3 h-3 rounded-sm bg-[#10b981]/80"></span>
+                        <span className="w-3 h-3 rounded-sm bg-[#10b981]"></span>
+                        <span>More</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </section>
 
@@ -280,13 +346,14 @@ export default function MainPortfolio() {
               </div>
             </section>
 
+            {/* ACHIEVEMENTS */}
             <section id="achievements" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" style={{ borderColor: theme.cardBorder }}>
               <div className="mb-16">
                 <h2 style={{ color: theme.mainText }} className="text-4xl font-black mb-4 tracking-tight transition-colors">Experiences & Awards</h2>
               </div>
               <div className="space-y-6">
                 {achievements.map((ach) => (
-                  <div key={ach.id} style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border p-8 rounded-2xl flex flex-col md:flex-row md:items-start gap-8 hover:border-[#10b981] transition-colors shadow-sm">
+                  <div key={ach.id} style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border p-8 rounded-[2rem] flex flex-col md:flex-row md:items-start gap-8 hover:border-[#10b981] transition-colors shadow-sm">
                     <div style={{ color: theme.mutedText }} className="font-mono text-xl font-bold shrink-0 w-24 pt-1 transition-colors">{ach.year}</div>
                     <div>
                       <h3 style={{ color: theme.mainText }} className="text-2xl font-black mb-2 transition-colors">{ach.title}</h3>
@@ -322,7 +389,7 @@ export default function MainPortfolio() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         whileHover={{ scale: 1.02 }}
-                        className="break-inside-avoid rounded-2xl overflow-hidden shadow-md border"
+                        className="break-inside-avoid rounded-[2rem] overflow-hidden shadow-md border"
                         style={{ borderColor: theme.cardBorder, backgroundColor: theme.cardBg }}
                       >
                         <img src={gal.url} alt={gal.caption || 'Gallery Image'} className="w-full h-auto object-cover" />
@@ -350,14 +417,14 @@ export default function MainPortfolio() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
-                  <div className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/50 rounded-3xl border border-white/5 shadow-inner">
+                  <div className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/50 rounded-[2rem] border border-white/5 shadow-inner">
                     <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
                     <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">
                       &lt; Drag ID Card /&gt;
                     </p>
                   </div>
 
-                  <div className="bg-[#1e293b]/30 p-8 md:p-10 rounded-3xl border border-white/5 flex flex-col h-[550px] justify-between shadow-2xl">
+                  <div className="bg-[#1e293b]/30 p-8 md:p-10 rounded-[2rem] border border-white/5 flex flex-col h-[550px] justify-between shadow-2xl">
                     <div>
                       <h3 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
                         <Send className="text-[#10b981]" /> Hubungi Saya
