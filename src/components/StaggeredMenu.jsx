@@ -17,7 +17,7 @@ export const StaggeredMenu = ({
   isFixed = false,
   closeOnClickAway = true,
   darkMode = false, 
-  toggleTheme, // <-- Prop baru untuk mengontrol mode gelap/terang dari dalam menu
+  toggleTheme, 
   onMenuOpen,
   onMenuClose
 }) => {
@@ -71,7 +71,7 @@ export const StaggeredMenu = ({
       if (toggleBtnRef.current) gsap.set(toggleBtnRef.current, { color: menuButtonColor });
     });
     return () => ctx.revert();
-  }, [position, menuButtonColor]);
+  }, [position]); // <-- PERBAIKAN: menuButtonColor dihapus dari sini agar GSAP tidak error saat ganti tema
 
   const buildOpenTimeline = useCallback(() => {
     const panel = panelRef.current;
@@ -270,7 +270,7 @@ export const StaggeredMenu = ({
       const targetColor = openRef.current && changeMenuColorOnOpen ? openMenuButtonColor : menuButtonColor;
       gsap.to(toggleBtnRef.current, { color: targetColor, duration: 0.3 });
     }
-  }, [changeMenuColorOnOpen, menuButtonColor, openMenuButtonColor]);
+  }, [changeMenuColorOnOpen, menuButtonColor, openMenuButtonColor, darkMode, open]);
 
   const animateText = useCallback(opening => {
     const inner = textInnerRef.current;
@@ -361,6 +361,10 @@ export const StaggeredMenu = ({
           background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
           border-left: 1px solid ${darkMode ? '#1e293b' : '#f1f5f9'} !important;
           transition: background-color 0.3s ease, border-color 0.3s ease !important;
+        }
+        .sm-panel-inner {
+          background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
+          transition: background-color 0.3s ease !important;
         }
         .sm-panel-item {
           color: ${darkMode ? '#f8fafc' : '#0f172a'} !important;

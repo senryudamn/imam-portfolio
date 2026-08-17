@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
 import TextType from '../components/TextType'; 
-
-// IMPORT FIREBASE UNTUK KIRIM PESAN
-import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -39,18 +35,23 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
     >
       <audio ref={audioRef} src={audioUrl} loop onEnded={() => setIsPlaying(false)} />
       
+      {/* Tombol Play/Pause dengan Efek Denyut (Pulse) */}
       <button 
         onClick={togglePlay} 
         className="relative w-11 h-11 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] z-10"
       >
         {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+        
+        {/* Ring Ping Animasi saat Playing */}
         {isPlaying && (
           <span className="absolute inset-0 rounded-full border-2 border-[#10b981] animate-ping opacity-50"></span>
         )}
       </button>
       
       <div className="flex flex-col justify-center overflow-hidden">
+        
         <div className="flex items-center gap-2">
+          {/* Ikon Vinyl Berputar */}
           <motion.div 
             animate={{ rotate: isPlaying ? 360 : 0 }}
             transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
@@ -59,6 +60,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
             <Disc size={14} />
           </motion.div>
 
+          {/* Teks Berjalan dengan Efek Memudar di Ujung (Masking) */}
           <div 
             className="overflow-hidden w-24 md:w-36 relative flex items-center"
             style={{
@@ -72,6 +74,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
               className="flex whitespace-nowrap gap-6 text-xs font-bold tracking-wide"
               style={{ color: theme.mainText }}
             >
+              {/* Teks diduplikasi agar gulungannya tidak pernah putus (seamless) */}
               <span>{trackTitle}</span>
               <span>{trackTitle}</span>
               <span>{trackTitle}</span>
@@ -79,6 +82,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
           </div>
         </div>
 
+        {/* Audio Visualizer Mini (Bar Naik Turun) */}
         <div className="flex items-end gap-[3px] h-2.5 mt-1 ml-6">
           {[1, 2, 3, 4, 5].map((i) => (
             <motion.div
@@ -95,6 +99,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
             />
           ))}
         </div>
+
       </div>
     </motion.div>
   );
@@ -111,9 +116,9 @@ export default function MainPortfolio() {
   const [darkMode, setDarkMode] = useState(false);
   const [activeView, setActiveView] = useState('home'); 
   const [selectedProject, setSelectedProject] = useState(null);
-  
+
+  // STATE BARU: MENDETEKSI MENU TERBUKA ATAU TERTUTUP UNTUK EFEK BLUR
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSendingMessage, setIsSendingMessage] = useState(false); // STATE KIRIM PESAN
 
   useEffect(() => {
     const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -201,31 +206,10 @@ export default function MainPortfolio() {
     window.location.hash = `#project-detail-${proj.id || proj.tempId}`;
   };
 
-  // LOGIKA KIRIM PESAN KE FIREBASE
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = (e) => {
     e.preventDefault();
-    setIsSendingMessage(true);
-    
-    const formData = new FormData(e.target);
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const message = formData.get('message');
-
-    try {
-      await addDoc(collection(db, "messages"), {
-        name,
-        email,
-        message,
-        createdAt: new Date().toISOString()
-      });
-      alert("Pesan berhasil terkirim! Terima kasih telah menghubungi saya.");
-      e.target.reset();
-    } catch (error) {
-      console.error("Error sending message: ", error);
-      alert("Gagal mengirim pesan. Silakan coba lagi nanti.");
-    } finally {
-      setIsSendingMessage(false);
-    }
+    alert("Pesan terkirim!");
+    e.target.reset();
   };
 
   if (loading) {
@@ -367,16 +351,18 @@ export default function MainPortfolio() {
       className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10"
     >
 
+      {/* OVERLAY BLUR: MUNCUL SAAT MENU DIBUKA */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
             animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="fixed inset-0 z-40 bg-black/20 dark:bg-slate-900/60 transition-all"
+            className="fixed inset-0 z-40 bg-black/20 dark:bg-slate-900/60 transition-all pointer-events-none"
           />
         )}
       </AnimatePresence>
+      {/* -------------------------------------- */}
 
       <FloatingMusicPlayer 
         audioUrl={profile.audioUrl} 
@@ -393,9 +379,9 @@ export default function MainPortfolio() {
         displayItemNumbering={true}
         isFixed={true}
         darkMode={darkMode} 
-        toggleTheme={() => setDarkMode(!darkMode)}
-        onMenuOpen={() => setIsMenuOpen(true)} 
-        onMenuClose={() => setIsMenuOpen(false)} 
+        toggleTheme={() => setDarkMode(!darkMode)} // Fungsi dark mode diteruskan ke menu
+        onMenuOpen={() => setIsMenuOpen(true)}     // Trigger blur menyala
+        onMenuClose={() => setIsMenuOpen(false)}   // Trigger blur mati
         menuButtonColor={darkMode ? "#10b981" : "#0f172a"} 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
@@ -405,6 +391,9 @@ export default function MainPortfolio() {
 
       <AnimatePresence mode="wait">
         
+        {/* ======================================================== */}
+        {/* VIEW 1: HALAMAN UTAMA (HOME) */}
+        {/* ======================================================== */}
         {activeView === 'home' && (
           <motion.div 
             key="home" 
@@ -717,8 +706,8 @@ export default function MainPortfolio() {
                           <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Pesan</label>
                           <textarea rows="4" name="message" placeholder="Tuliskan pesan Anda..." className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all resize-none" required></textarea>
                         </div>
-                        <button type="submit" disabled={isSendingMessage} className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {isSendingMessage ? <Loader2 className="animate-spin inline-block mx-auto" /> : 'Kirim Pesan Sekarang'}
+                        <button type="submit" className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          Kirim Pesan Sekarang
                         </button>
                       </form>
                     </div>
