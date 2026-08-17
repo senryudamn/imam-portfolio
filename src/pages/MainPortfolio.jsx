@@ -7,8 +7,9 @@ import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
 import TextType from '../components/TextType'; // <-- IMPORT TEXT TYPE DI SINI
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 
-// --- KOMPONEN PEMUTAR MUSIK MELAYANG ---
+// --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
@@ -21,31 +22,87 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
 
   if (!audioUrl) return null; 
 
+  const trackTitle = title || "Unknown Track";
+
   return (
-    <div 
-      style={{ backgroundColor: darkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)', borderColor: theme.cardBorder }} 
-      className="fixed bottom-6 left-6 md:bottom-10 md:left-10 z-50 flex items-center gap-3 backdrop-blur-md px-4 py-2 rounded-full shadow-2xl border transition-colors duration-300"
+    <motion.div 
+      initial={{ y: 50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className="fixed bottom-6 left-6 md:bottom-10 md:left-10 z-50 flex items-center p-1.5 pr-5 gap-4 rounded-full shadow-2xl backdrop-blur-xl border transition-all duration-500 overflow-hidden group hover:scale-[1.02]"
+      style={{ 
+        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)', 
+        borderColor: theme.cardBorder 
+      }}
     >
-      <audio ref={audioRef} src={audioUrl} loop />
+      <audio ref={audioRef} src={audioUrl} loop onEnded={() => setIsPlaying(false)} />
       
+      {/* Tombol Play/Pause dengan Efek Denyut (Pulse) */}
       <button 
         onClick={togglePlay} 
-        className="w-10 h-10 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg shadow-[#10b981]/30"
+        className="relative w-11 h-11 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] z-10"
       >
-        {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" className="ml-1" />}
+        {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+        
+        {/* Ring Ping Animasi saat Playing */}
+        {isPlaying && (
+          <span className="absolute inset-0 rounded-full border-2 border-[#10b981] animate-ping opacity-50"></span>
+        )}
       </button>
       
-      <div className="overflow-hidden w-32 md:w-48 flex items-center">
-        <motion.div 
-          animate={{ x: ["100%", "-100%"] }}
-          transition={{ repeat: Infinity, ease: "linear", duration: 8 }}
-          className="text-sm font-bold whitespace-nowrap"
-          style={{ color: theme.mainText }}
-        >
-          🎵 {title || "Unknown Track"}
-        </motion.div>
+      <div className="flex flex-col justify-center overflow-hidden">
+        
+        <div className="flex items-center gap-2">
+          {/* Ikon Vinyl Berputar */}
+          <motion.div 
+            animate={{ rotate: isPlaying ? 360 : 0 }}
+            transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+            className="text-[#10b981] shrink-0"
+          >
+            <Disc size={14} />
+          </motion.div>
+
+          {/* Teks Berjalan dengan Efek Memudar di Ujung (Masking) */}
+          <div 
+            className="overflow-hidden w-24 md:w-36 relative flex items-center"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+              WebkitMaskImage: '-webkit-linear-gradient(left, transparent 0%, black 10%, black 90%, transparent 100%)'
+            }}
+          >
+            <motion.div 
+              animate={{ x: isPlaying ? ["0%", "-50%"] : "0%" }}
+              transition={{ repeat: Infinity, ease: "linear", duration: 8 }}
+              className="flex whitespace-nowrap gap-6 text-xs font-bold tracking-wide"
+              style={{ color: theme.mainText }}
+            >
+              {/* Teks diduplikasi agar gulungannya tidak pernah putus (seamless) */}
+              <span>{trackTitle}</span>
+              <span>{trackTitle}</span>
+              <span>{trackTitle}</span>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Audio Visualizer Mini (Bar Naik Turun) */}
+        <div className="flex items-end gap-[3px] h-2.5 mt-1 ml-6">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <motion.div
+              key={i}
+              className="w-[3px] bg-[#10b981] rounded-t-sm"
+              animate={isPlaying ? { height: ["3px", "10px", "4px", "8px", "3px"] } : { height: "3px" }}
+              transition={{
+                repeat: Infinity,
+                duration: 0.6 + (i * 0.1),
+                ease: "easeInOut",
+                times: [0, 0.2, 0.5, 0.8, 1]
+              }}
+              style={{ opacity: isPlaying ? 1 : 0.3 }}
+            />
+          ))}
+        </div>
+
       </div>
-    </div>
+    </motion.div>
   );
 };
 
