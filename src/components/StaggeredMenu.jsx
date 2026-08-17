@@ -20,9 +20,8 @@ export const StaggeredMenu = ({
   toggleTheme, 
   onMenuOpen,
   onMenuClose,
-  isOpenProp // <-- PROPERTI BARU UNTUK KENDALI DARI LUAR
+  isOpenProp 
 }) => {
-  // Singkronkan state internal dengan properti dari luar
   const [open, setOpen] = useState(isOpenProp || false);
   const openRef = useRef(isOpenProp || false);
   
@@ -45,7 +44,6 @@ export const StaggeredMenu = ({
   const busyRef = useRef(false);
   const itemEntranceTweenRef = useRef(null);
 
-  // Efek untuk memaksa menu terbuka/tertutup jika state di parent berubah
   useEffect(() => {
     if (isOpenProp !== undefined && isOpenProp !== openRef.current) {
       const target = isOpenProp;
@@ -80,7 +78,6 @@ export const StaggeredMenu = ({
 
       const offscreen = position === 'left' ? -100 : 100;
       
-      // Setup awal berdasarkan state
       if (!openRef.current) {
         gsap.set([panel, ...preLayers], { xPercent: offscreen, opacity: 1 });
         if (preContainer) gsap.set(preContainer, { xPercent: 0, opacity: 1 });
@@ -377,7 +374,6 @@ export const StaggeredMenu = ({
     };
   }, [closeOnClickAway, open, closeMenu]);
 
-  // LOGIKA WARNA MENU BERKEBALIKAN DENGAN TEMA
   const menuBgColor = darkMode ? '#ffffff' : '#0f172a';
   const menuTextColor = darkMode ? '#0f172a' : '#f8fafc';
   const menuBorderColor = darkMode ? '#e2e8f0' : '#1e293b';
@@ -390,6 +386,7 @@ export const StaggeredMenu = ({
       data-open={open || undefined}
     >
       
+      {/* PENAMBAHAN MEDIA QUERY UNTUK RESPONSIVE MOBILE */}
       <style>{`
         .staggered-menu-panel {
           background-color: ${menuBgColor} !important;
@@ -420,6 +417,20 @@ export const StaggeredMenu = ({
         .sm-panel-list[data-numbering] .sm-panel-item::after {
           color: ${accentColor} !important;
           opacity: 0.5 !important;
+        }
+
+        /* --- KODE BARU: AGAR DI HP MENU TIDAK 100% FULL SCREEN --- */
+        @media (max-width: 768px) {
+          .staggered-menu-panel, .sm-prelayer {
+            width: 80vw !important; /* Laci menu hanya mengambil 80% layar HP */
+            max-width: 350px !important;
+          }
+          .sm-panel-itemLabel {
+            font-size: 2.5rem !important; /* Ukuran font disesuaikan untuk HP */
+          }
+          .sm-socials-link {
+            font-size: 0.9rem !important;
+          }
         }
       `}</style>
 
@@ -532,7 +543,7 @@ export const StaggeredMenu = ({
             <div style={{ 
               marginTop: '2rem', 
               paddingTop: '1.5rem',
-              borderTop: `1px solid ${menuBorderColor}50`, // opacity 50%
+              borderTop: `1px solid ${menuBorderColor}50`,
               transition: 'border-color 0.3s ease',
               display: 'flex',
               justifyContent: 'space-between',
@@ -563,7 +574,6 @@ export const StaggeredMenu = ({
                 Admin Mode
               </a>
 
-              {/* TOMBOL THEME TOGGLE (TETAP DIAM DI MENU MESKIPUN DIKLIK) */}
               <button 
                 onClick={(e) => {
                   e.preventDefault();
@@ -579,7 +589,7 @@ export const StaggeredMenu = ({
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  backgroundColor: darkMode ? '#f1f5f9' : '#1e293b', // Warna bundaran kebalikan
+                  backgroundColor: darkMode ? '#f1f5f9' : '#1e293b',
                   color: '#10b981',
                   border: `1px solid ${darkMode ? '#e2e8f0' : '#334155'}`,
                   cursor: 'pointer',
