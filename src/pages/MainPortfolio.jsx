@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft } from 'lucide-react';
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2 } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
@@ -52,6 +52,9 @@ export default function MainPortfolio() {
   const [achievements, setAchievements] = useState([]);
   const [gallery, setGallery] = useState([]); 
   
+  // STATE STATISTIK GITHUB OTOMATIS
+  const [githubStats, setGithubStats] = useState({ repos: 0, followers: 0, following: 0, isLoaded: false });
+  
   // STATE DARK MODE
   const [darkMode, setDarkMode] = useState(false);
   
@@ -79,10 +82,24 @@ export default function MainPortfolio() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        setProfile(await fetchProfile());
+        const profileData = await fetchProfile();
+        setProfile(profileData);
         setProjects(await fetchProjects());
         setAchievements(await fetchAchievements());
         setGallery(await fetchGallery());
+
+        // MENGAMBIL DATA STATISTIK GITHUB SECARA OTOMATIS
+        if (profileData?.github) {
+          const username = profileData.github.split('/').pop();
+          const ghRes = await fetch(`https://api.github.com/users/${username}`);
+          const ghData = await ghRes.json();
+          setGithubStats({
+            repos: ghData.public_repos || 0,
+            followers: ghData.followers || 0,
+            following: ghData.following || 0,
+            isLoaded: true
+          });
+        }
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
@@ -249,10 +266,9 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* DESAIN BARU GITHUB CONTRIBUTIONS */}
+            {/* GITHUB STATS OTOMATIS */}
             <section className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t relative overflow-hidden" style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}>
               
-              {/* Teks Watermark Besar di Belakang */}
               <div className="absolute top-16 left-0 w-full overflow-hidden flex justify-center pointer-events-none select-none z-0">
                 <span className="text-[8rem] md:text-[14rem] font-black tracking-tighter whitespace-nowrap transition-colors" style={{ color: theme.mainText, opacity: darkMode ? 0.03 : 0.04 }}>
                   CONTRIBUTIONS
@@ -260,41 +276,45 @@ export default function MainPortfolio() {
               </div>
 
               <div className="relative z-10">
-                {/* Header Bagian Atas */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
                   <div>
                     <p style={{ color: theme.mutedText }} className="text-sm font-bold tracking-widest uppercase mb-2">Coding Activity</p>
                     <h2 style={{ color: theme.mainText }} className="text-4xl md:text-5xl font-black tracking-tight uppercase">GitHub Contributions</h2>
                   </div>
                   <p style={{ color: theme.mutedText }} className="max-w-sm text-left md:text-right font-medium">
-                    Open-source activity tracker showing commits, pull requests, and code reviews.
+                    Automated open-source activity tracker pulled directly from GitHub API.
                   </p>
                 </div>
 
-                {/* Grid Layout GitHub */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   
-                  {/* Kolom Kiri: Kartu Statistik */}
+                  {/* Kolom Kiri: Kartu Statistik Otomatis */}
                   <div className="lg:col-span-4 flex flex-col gap-6">
                     <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-8 flex-1 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
-                      <p style={{ color: theme.mutedText }} className="text-xs font-bold tracking-widest uppercase mb-4">Last 365 Days</p>
-                      <h3 style={{ color: theme.mainText }} className="text-6xl md:text-7xl font-black mb-2 tracking-tighter">997</h3>
-                      <p style={{ color: theme.mutedText }} className="text-sm font-medium">contributions in the last year</p>
+                      <p style={{ color: theme.mutedText }} className="text-xs font-bold tracking-widest uppercase mb-4">Total Public Repos</p>
+                      <h3 style={{ color: theme.mainText }} className="text-6xl md:text-7xl font-black mb-2 tracking-tighter">
+                        {githubStats.isLoaded ? githubStats.repos : <Loader2 className="animate-spin text-[#10b981]" />}
+                      </h3>
+                      <p style={{ color: theme.mutedText }} className="text-sm font-medium">open-source repositories</p>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-6">
                       <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
-                        <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Longest Streak</p>
-                        <h4 style={{ color: theme.mainText }} className="text-2xl font-black">10 days</h4>
+                        <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Followers</p>
+                        <h4 style={{ color: theme.mainText }} className="text-2xl font-black">
+                           {githubStats.isLoaded ? githubStats.followers : '-'}
+                        </h4>
                       </div>
                       <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
-                        <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Active Days</p>
-                        <h4 style={{ color: theme.mainText }} className="text-2xl font-black">64%</h4>
+                        <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Following</p>
+                        <h4 style={{ color: theme.mainText }} className="text-2xl font-black">
+                           {githubStats.isLoaded ? githubStats.following : '-'}
+                        </h4>
                       </div>
                     </div>
                   </div>
 
-                  {/* Kolom Kanan: Chart Graph */}
+                  {/* Kolom Kanan: Chart Graph Visual */}
                   <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="lg:col-span-8 border rounded-[2rem] p-8 shadow-sm flex flex-col justify-between transition-colors hover:shadow-md">
                     <div className="overflow-x-auto pb-6 hide-scrollbar flex items-center justify-center flex-1">
                       <img 
@@ -305,7 +325,6 @@ export default function MainPortfolio() {
                       />
                     </div>
                     
-                    {/* Bagian Bawah Chart: Username & Legend */}
                     <div className="mt-4 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center transition-colors" style={{ borderColor: theme.cardBorder }}>
                       <span style={{ color: theme.mutedText }} className="text-sm font-mono font-medium">@{githubUsername}</span>
                       <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.mutedText }}>
