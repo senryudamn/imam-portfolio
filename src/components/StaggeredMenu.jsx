@@ -374,7 +374,6 @@ export const StaggeredMenu = ({
     };
   }, [closeOnClickAway, open, closeMenu]);
 
-  // LOGIKA WARNA MENU BERKEBALIKAN DENGAN TEMA WEBSITE
   const menuBgColor = darkMode ? '#ffffff' : '#0f172a';
   const menuTextColor = darkMode ? '#0f172a' : '#f8fafc';
   const menuBorderColor = darkMode ? '#e2e8f0' : '#1e293b';
@@ -386,7 +385,6 @@ export const StaggeredMenu = ({
       data-position={position}
       data-open={open || undefined}
     >
-      
       <style>{`
         .staggered-menu-panel {
           background-color: ${menuBgColor} !important;
@@ -418,14 +416,12 @@ export const StaggeredMenu = ({
           color: ${accentColor} !important;
           opacity: 0.5 !important;
         }
-
         .staggered-menu-panel, .sm-prelayer {
           left: auto !important;
           right: 0 !important;
           width: 400px !important; 
           max-width: 100vw !important;
         }
-
         @media (max-width: 768px) {
           .staggered-menu-panel, .sm-prelayer {
             width: 85vw !important; 
@@ -512,7 +508,17 @@ export const StaggeredMenu = ({
             {items && items.length ? (
               items.map((it, idx) => (
                 <li className="sm-panel-itemWrap" key={it.label + idx}>
-                  <a className="sm-panel-item" href={it.link} aria-label={it.ariaLabel} data-index={idx + 1} onClick={closeMenu}>
+                  <a 
+                    className="sm-panel-item" 
+                    href={it.link} 
+                    aria-label={it.ariaLabel} 
+                    data-index={idx + 1} 
+                    tabIndex={open ? 0 : -1}
+                    onClick={(e) => {
+                      e.currentTarget.blur(); // PERBAIKAN: Melepaskan fokus untuk menghindari error aria-hidden
+                      closeMenu();
+                    }}
+                  >
                     <span className="sm-panel-itemLabel">{it.label}</span>
                   </a>
                 </li>
@@ -533,7 +539,13 @@ export const StaggeredMenu = ({
                 <ul className="sm-socials-list" role="list">
                   {socialItems.map((s, i) => (
                     <li key={s.label + i} className="sm-socials-item">
-                      <a href={s.link} target="_blank" rel="noopener noreferrer" className="sm-socials-link">
+                      <a 
+                        href={s.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="sm-socials-link"
+                        tabIndex={open ? 0 : -1}
+                      >
                         {s.label}
                       </a>
                     </li>
@@ -553,6 +565,7 @@ export const StaggeredMenu = ({
             }}>
               <a 
                 href="/admin" 
+                tabIndex={open ? 0 : -1}
                 style={{ 
                   fontSize: '0.8rem', 
                   fontWeight: 'bold', 
@@ -576,10 +589,9 @@ export const StaggeredMenu = ({
                 Admin Mode
               </a>
 
-              {/* PERBAIKAN: Penambahan type="button" agar tidak mereset halaman, 
-                  dan pointer-events: none pada ikon SVG */}
               <button 
                 type="button"
+                tabIndex={open ? 0 : -1}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
