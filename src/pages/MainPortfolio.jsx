@@ -112,15 +112,13 @@ export default function MainPortfolio() {
   const [achievements, setAchievements] = useState([]);
   const [gallery, setGallery] = useState([]); 
   
-  // STATE STATISTIK GITHUB OTOMATIS
   const [githubStats, setGithubStats] = useState({ repos: 0, followers: 0, following: 0, isLoaded: false });
-  
-  // STATE DARK MODE
   const [darkMode, setDarkMode] = useState(false);
-  
-  // STATE VIRTUAL ROUTING
   const [activeView, setActiveView] = useState('home'); 
   const [selectedProject, setSelectedProject] = useState(null);
+
+  // STATE BARU: MENDETEKSI MENU TERBUKA ATAU TERTUTUP UNTUK EFEK BLUR
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -148,7 +146,6 @@ export default function MainPortfolio() {
         setAchievements(await fetchAchievements());
         setGallery(await fetchGallery());
 
-        // --- MENGAMBIL DATA STATISTIK GITHUB SECARA OTOMATIS ---
         const rawGithubUrl = profileData?.github || 'https://github.com/senryudamn';
         const cleanUrl = rawGithubUrl.replace(/\/$/, ''); 
         const extractedUsername = cleanUrl.split('/').pop();
@@ -164,19 +161,14 @@ export default function MainPortfolio() {
               isLoaded: true 
             });
           } else {
-            // Jika limit API Github habis
             setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
           }
         } catch (ghError) {
-          // Jika gagal terkoneksi internet ke Github
           setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
         }
-        // -------------------------------------
-
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
-        // Waktu diperpanjang sedikit ke 1200ms agar efek ngetik terminal sempat selesai
         setTimeout(() => setLoading(false), 1200);
       }
     };
@@ -220,9 +212,6 @@ export default function MainPortfolio() {
     e.target.reset();
   };
 
-  // ========================================================
-  // ANIMASI LOADING BARU (EFEK TERMINAL MENGETIK)
-  // ========================================================
   if (loading) {
     const loadingText = "MEMUAT PORTFOLIO...";
     return (
@@ -276,7 +265,6 @@ export default function MainPortfolio() {
       </div>
     );
   }
-  // ========================================================
 
   const rawGithubUrl = profile?.github || 'https://github.com/senryudamn';
   const githubUsername = rawGithubUrl.replace(/\/$/, '').split('/').pop();
@@ -362,15 +350,19 @@ export default function MainPortfolio() {
       style={{ backgroundColor: theme.mainBg, color: theme.mainText, transition: 'background-color 0.3s ease, color 0.3s ease' }} 
       className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10"
     >
-      
-      {/* TOMBOL TOGGLE DARK MODE */}
-      <button 
-        onClick={() => setDarkMode(!darkMode)}
-        style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}
-        className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl border text-[#10b981] hover:scale-110 transition-all duration-300"
-      >
-        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-      </button>
+
+      {/* OVERLAY BLUR: MUNCUL SAAT MENU DIBUKA */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="fixed inset-0 z-40 bg-black/20 dark:bg-slate-900/60 transition-all"
+          />
+        )}
+      </AnimatePresence>
+      {/* -------------------------------------- */}
 
       <FloatingMusicPlayer 
         audioUrl={profile.audioUrl} 
@@ -387,6 +379,9 @@ export default function MainPortfolio() {
         displayItemNumbering={true}
         isFixed={true}
         darkMode={darkMode} 
+        toggleTheme={() => setDarkMode(!darkMode)} // Fungsi dark mode diteruskan ke menu
+        onMenuOpen={() => setIsMenuOpen(true)}     // Trigger blur menyala
+        onMenuClose={() => setIsMenuOpen(false)}   // Trigger blur mati
         menuButtonColor={darkMode ? "#10b981" : "#0f172a"} 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
@@ -477,7 +472,7 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* NEW: ABOUT SECTION DENGAN EFEK TYPEWRITER (DIJADIKAN STRING TUNGGAL AGAR TIDAK DIHAPUS) */}
+            {/* SEKSI ABOUT DENGAN EFEK TYPEWRITER */}
             <section 
               id="about" 
               className="py-32 px-6 sm:px-12 max-w-5xl mx-auto text-center flex items-center justify-center min-h-[50vh] border-t" 
