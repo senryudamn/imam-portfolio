@@ -13,7 +13,6 @@ const ImageSlider = ({ images, onUpload }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Pastikan formatnya selalu array (mendukung backward compatibility jika sebelumnya hanya 1 string URL)
   const validImages = Array.isArray(images) ? images : (images ? [images] : []);
 
   const nextSlide = (e) => {
@@ -36,18 +35,13 @@ const ImageSlider = ({ images, onUpload }) => {
     <div className="w-full h-full relative group bg-slate-100 flex items-center justify-center">
       {validImages.length > 0 ? (
         <>
-          {/* Tampilan Gambar */}
           <img src={validImages[currentIndex]} className="w-full h-full object-cover" alt={`Slide ${currentIndex}`} />
-          
-          {/* Tombol Next & Prev (Hanya muncul jika gambar lebih dari 1) */}
           {validImages.length > 1 && (
             <div className="absolute inset-0 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={prevSlide} className="bg-black/60 text-white p-1 rounded-full hover:bg-[#10b981] transition-colors"><ChevronLeft size={16} /></button>
               <button onClick={nextSlide} className="bg-black/60 text-white p-1 rounded-full hover:bg-[#10b981] transition-colors"><ChevronRight size={16} /></button>
             </div>
           )}
-          
-          {/* Indikator Titik-Titik di Bawah */}
           {validImages.length > 1 && (
             <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
               {validImages.map((_, i) => (
@@ -63,7 +57,6 @@ const ImageSlider = ({ images, onUpload }) => {
         </div>
       )}
 
-      {/* Area Klik Upload (Mendukung seleksi banyak file sekaligus) */}
       <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity cursor-pointer text-white">
         {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Upload size={24} />}
         <span className="text-xs font-bold mt-2">Upload File(s)</span>
@@ -73,15 +66,14 @@ const ImageSlider = ({ images, onUpload }) => {
   );
 };
 
-
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
 
-  // State Data
-  const [profile, setProfile] = useState({ name: '', role: '', bio: '', email: '', linkedin: '', github: '', avatar: '', audioUrl: '', audioTitle: '' });
+  // MENGUBAH STATE: Menambahkan aboutTexts
+  const [profile, setProfile] = useState({ name: '', role: '', bio: '', email: '', linkedin: '', github: '', avatar: '', audioUrl: '', audioTitle: '', aboutTexts: '' });
   const [projects, setProjects] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [gallery, setGallery] = useState([]);
@@ -119,7 +111,6 @@ export default function AdminPanel() {
     }
   };
 
-  // --- AUTENTIKASI ---
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -134,7 +125,6 @@ export default function AdminPanel() {
     toast.success("Berhasil logout.");
   };
 
-  // --- FUNGSI CLOUDINARY UPLOAD ---
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -179,14 +169,13 @@ export default function AdminPanel() {
         setProfile({ ...profile, audioUrl: data.secure_url });
         toast.success("Musik berhasil diunggah!", { id: 'upload-audio' });
       } else {
-        toast.error("Gagal mengunggah musik.", { id: 'upload-audio' });
+        toast.error("Gagal mengunggah musik. Cek ukuran file.", { id: 'upload-audio' });
       }
     } catch (error) {
       toast.error("Error server Cloudinary.", { id: 'upload-audio' });
     }
   };
 
-  // --- HANDLER PROFIL ---
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
@@ -214,9 +203,7 @@ export default function AdminPanel() {
     setIsUploading(false);
   };
 
-  // --- HANDLER PROJECTS ---
   const handleAddProject = () => {
-    // Field images sekarang menggunakan Array []
     setProjects([{ isNew: true, tempId: Date.now(), title: '', desc: '', tech: '', category: 'Web Dev', images: [], image: '' }, ...projects]);
   };
 
@@ -256,7 +243,6 @@ export default function AdminPanel() {
     }
   };
 
-  // LOGIKA BARU: MENDUKUNG UPLOAD BANYAK FOTO SEKALIGUS
   const handleProjectImage = async (e, projId, tempId) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -272,13 +258,12 @@ export default function AdminPanel() {
     if (uploadedUrls.length > 0) {
       setProjects(projects.map(p => {
         if ((projId && p.id === projId) || (!projId && tempId && p.tempId === tempId)) {
-          // Gabungkan gambar lama (jika ada) dengan gambar baru
           const currentImages = p.images || (p.image ? [p.image] : []);
           const updatedImages = [...currentImages, ...uploadedUrls];
           return { 
             ...p, 
             images: updatedImages, 
-            image: updatedImages[0] // Tetap simpan 1 gambar utama di field 'image' untuk backward compatibility
+            image: updatedImages[0] 
           };
         }
         return p;
@@ -289,7 +274,6 @@ export default function AdminPanel() {
     }
   };
 
-  // --- HANDLER ACHIEVEMENTS ---
   const handleAddAchievement = () => {
     setAchievements([{ isNew: true, tempId: Date.now(), year: '', title: '', desc: '' }, ...achievements]);
   };
@@ -326,7 +310,6 @@ export default function AdminPanel() {
     }
   };
 
-  // --- HANDLER GALLERY ---
   const handleAddGallery = () => {
     setGallery([{ isNew: true, tempId: Date.now(), url: '', caption: '' }, ...gallery]);
   };
@@ -403,7 +386,6 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
       
-      {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-[#0f172a] text-white flex flex-col min-h-[auto] md:min-h-screen shrink-0 relative z-20 shadow-2xl">
         <div className="p-6 border-b border-slate-800">
           <h2 className="text-xl font-black tracking-wider text-[#10b981]">IMAM.dev <span className="text-white text-sm font-normal">/ Admin</span></h2>
@@ -429,7 +411,6 @@ export default function AdminPanel() {
         </div>
       </aside>
 
-      {/* CONTENT AREA */}
       <main className="flex-1 p-6 md:p-10 h-screen overflow-y-auto pb-32">
         <div className="max-w-4xl mx-auto">
           
@@ -474,6 +455,19 @@ export default function AdminPanel() {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Biodata Singkat</label>
                   <textarea rows="4" value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] focus:ring-1 outline-none"></textarea>
+                </div>
+
+                {/* PENAMBAHAN KOTAK UNTUK TEXT ANIMASI ABOUT */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Teks Animasi About (Pisahkan kalimat dengan Enter)</label>
+                  <textarea 
+                    rows="4" 
+                    placeholder="Contoh:&#10;I build fullstack web systems&#10;with clean user interfaces..." 
+                    value={profile.aboutTexts || ''} 
+                    onChange={(e) => setProfile({...profile, aboutTexts: e.target.value})} 
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] focus:ring-1 outline-none font-mono text-sm leading-relaxed"
+                  ></textarea>
+                  <p className="text-xs text-slate-500 mt-1">Setiap baris yang Anda ketik akan ditampilkan secara bergantian dengan efek mesin tik di halaman Home.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
@@ -531,7 +525,6 @@ export default function AdminPanel() {
               {projects.map((proj) => (
                 <div key={proj.id || proj.tempId} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-6 relative">
                   
-                  {/* PENERAPAN KOMPONEN SLIDER UNTUK GAMBAR PROJECT */}
                   <div className="w-full md:w-48 h-32 rounded-lg border-2 border-dashed border-slate-300 shrink-0 overflow-hidden relative">
                     <ImageSlider 
                       images={proj.images || (proj.image ? [proj.image] : [])} 

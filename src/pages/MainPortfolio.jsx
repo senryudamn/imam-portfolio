@@ -6,6 +6,7 @@ import Lanyard from '../components/Lanyard';
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
+import TextType from '../components/TextType'; // <-- IMPORT TEXT TYPE DI SINI
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -27,7 +28,10 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
     >
       <audio ref={audioRef} src={audioUrl} loop />
       
-      <button onClick={togglePlay} className="w-10 h-10 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg shadow-[#10b981]/30">
+      <button 
+        onClick={togglePlay} 
+        className="w-10 h-10 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg shadow-[#10b981]/30"
+      >
         {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" className="ml-1" />}
       </button>
       
@@ -88,9 +92,9 @@ export default function MainPortfolio() {
         setAchievements(await fetchAchievements());
         setGallery(await fetchGallery());
 
-        // --- PERBAIKAN LOGIKA GITHUB STATS ---
+        // --- MENGAMBIL DATA STATISTIK GITHUB SECARA OTOMATIS ---
         const rawGithubUrl = profileData?.github || 'https://github.com/senryudamn';
-        const cleanUrl = rawGithubUrl.replace(/\/$/, ''); // Menghapus slash di akhir URL jika ada
+        const cleanUrl = rawGithubUrl.replace(/\/$/, ''); 
         const extractedUsername = cleanUrl.split('/').pop();
 
         try {
@@ -101,18 +105,14 @@ export default function MainPortfolio() {
               repos: ghData.public_repos || 0,
               followers: ghData.followers || 0,
               following: ghData.following || 0,
-              isLoaded: true // Matikan loading
+              isLoaded: true 
             });
           } else {
-            // Jika limit API Github habis
             setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
           }
         } catch (ghError) {
-          // Jika gagal terkoneksi internet ke Github
           setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
         }
-        // -------------------------------------
-
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
@@ -134,8 +134,12 @@ export default function MainPortfolio() {
       } else {
         setActiveView('home');
         setTimeout(() => {
-          const el = document.getElementById(hash.replace('#', ''));
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
+          if (hash === '' || hash === '#home') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            const el = document.getElementById(hash.replace('#', ''));
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }
         }, 100);
       }
     };
@@ -164,15 +168,16 @@ export default function MainPortfolio() {
     );
   }
 
-  // Gunakan logika pembersihan yang sama untuk username di bagian Chart
   const rawGithubUrl = profile?.github || 'https://github.com/senryudamn';
   const githubUsername = rawGithubUrl.replace(/\/$/, '').split('/').pop();
   
   const firstName = profile?.name ? profile.name.split(' ')[0] : 'imam';
   const role = profile?.role || 'IoT & Automation';
 
+  // MENU ITEMS DIPERBARUI DENGAN LINK ABOUT
   const menuItems = [
-    { label: 'Home', ariaLabel: 'Go to home page', link: '#about' },
+    { label: 'Home', ariaLabel: 'Go to home page', link: '#home' },
+    { label: 'About', ariaLabel: 'About me', link: '#about' }, // <-- Link About ditambahkan
     { label: 'Projects', ariaLabel: 'View our projects', link: '#projects-all' },
     { label: 'Experience', ariaLabel: 'View my experience', link: '#achievements' },
     { label: 'Gallery', ariaLabel: 'View photo gallery', link: '#gallery' }, 
@@ -202,19 +207,42 @@ export default function MainPortfolio() {
       style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
       className="border p-6 flex flex-col group shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl cursor-pointer"
     >
-      <div style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9' }} className="h-64 overflow-hidden mb-6 relative rounded-2xl transition-colors">
-        <img src={proj.image || (proj.images && proj.images[0])} alt={proj.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+      <div 
+        style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9' }} 
+        className="h-64 overflow-hidden mb-6 relative rounded-2xl transition-colors"
+      >
+        <img 
+          src={proj.image || (proj.images && proj.images[0])} 
+          alt={proj.title} 
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+        />
       </div>
       <div className="flex-1 flex flex-col">
-        <p className="text-[#10b981] font-bold text-xs uppercase tracking-widest mb-3">{proj.category}</p>
-        <h3 style={{ color: theme.mainText }} className="text-2xl font-black mb-3 flex items-center justify-between transition-colors">
+        <p className="text-[#10b981] font-bold text-xs uppercase tracking-widest mb-3">
+          {proj.category}
+        </p>
+        <h3 
+          style={{ color: theme.mainText }} 
+          className="text-2xl font-black mb-3 flex items-center justify-between transition-colors"
+        >
           {proj.title}
           <ArrowUpRight className="text-[#10b981] opacity-0 group-hover:opacity-100 transition-opacity" size={24}/>
         </h3>
-        <p style={{ color: theme.mutedText }} className="mb-6 line-clamp-3 leading-relaxed transition-colors">{proj.desc}</p>
+        <p 
+          style={{ color: theme.mutedText }} 
+          className="mb-6 line-clamp-3 leading-relaxed transition-colors"
+        >
+          {proj.desc}
+        </p>
         <div className="mt-auto flex flex-wrap gap-2">
           {(proj.tech || "").split(',').map((tech, idx) => (
-            <span key={idx} style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mutedText, borderColor: theme.cardBorder }} className="text-xs font-mono font-bold px-3 py-1 rounded-lg border transition-colors">{tech.trim()}</span>
+            <span 
+              key={idx} 
+              style={{ backgroundColor: darkMode ? '#0f172a' : '#f1f5f9', color: theme.mutedText, borderColor: theme.cardBorder }} 
+              className="text-xs font-mono font-bold px-3 py-1 rounded-lg border transition-colors"
+            >
+              {tech.trim()}
+            </span>
           ))}
         </div>
       </div>
@@ -222,7 +250,10 @@ export default function MainPortfolio() {
   );
 
   return (
-    <div style={{ backgroundColor: theme.mainBg, color: theme.mainText, transition: 'background-color 0.3s ease, color 0.3s ease' }} className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10">
+    <div 
+      style={{ backgroundColor: theme.mainBg, color: theme.mainText, transition: 'background-color 0.3s ease, color 0.3s ease' }} 
+      className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10"
+    >
       
       {/* TOMBOL TOGGLE DARK MODE */}
       <button 
@@ -233,7 +264,12 @@ export default function MainPortfolio() {
         {darkMode ? <Sun size={20} /> : <Moon size={20} />}
       </button>
 
-      <FloatingMusicPlayer audioUrl={profile.audioUrl} title={profile.audioTitle} darkMode={darkMode} theme={theme} />
+      <FloatingMusicPlayer 
+        audioUrl={profile.audioUrl} 
+        title={profile.audioTitle} 
+        darkMode={darkMode} 
+        theme={theme} 
+      />
 
       <StaggeredMenu
         position="right"
@@ -256,41 +292,123 @@ export default function MainPortfolio() {
         {/* VIEW 1: HALAMAN UTAMA (HOME) */}
         {/* ======================================================== */}
         {activeView === 'home' && (
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <motion.div 
+            key="home" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            transition={{ duration: 0.3 }}
+          >
             
             {/* HERO SECTION */}
-            <section id="about" className="pt-40 pb-20 px-6 sm:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
+            <section id="home" className="pt-40 pb-20 px-6 sm:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
               <div className="flex-1 space-y-6">
-                <p style={{ color: theme.mutedText }} className="text-sm font-bold tracking-widest uppercase mb-2 transition-colors">Based in Yogyakarta, Indonesia</p>
+                <p 
+                  style={{ color: theme.mutedText }} 
+                  className="text-sm font-bold tracking-widest uppercase mb-2 transition-colors"
+                >
+                  Based in Yogyakarta, Indonesia
+                </p>
                 <div className="h-auto md:h-[180px] w-full">
-                  <FoldText key={darkMode ? 'dark' : 'light'} text={`Hi, I'm ${firstName}.\n${role}`} splitBy="line" hinge="bottom" trigger="mount" duration={0.8} stagger={0.2} fontSize={72} fontWeight={900} color={theme.mainText} />
+                  <FoldText 
+                    key={darkMode ? 'dark' : 'light'} 
+                    text={`Hi, I'm ${firstName}.\n${role}`} 
+                    splitBy="line" 
+                    hinge="bottom" 
+                    trigger="mount" 
+                    duration={0.8} 
+                    stagger={0.2} 
+                    fontSize={72} 
+                    fontWeight={900} 
+                    color={theme.mainText} 
+                  />
                 </div>
-                <p style={{ color: theme.mutedText }} className="text-lg leading-relaxed max-w-xl font-medium transition-colors">{profile.bio}</p>
+                <p 
+                  style={{ color: theme.mutedText }} 
+                  className="text-lg leading-relaxed max-w-xl font-medium transition-colors"
+                >
+                  {profile.bio}
+                </p>
                 <div className="flex gap-4 pt-6">
-                  <a href="#projects" className="bg-[#10b981] text-white font-bold px-8 py-3.5 rounded-full hover:bg-emerald-600 transition shadow-lg shadow-[#10b981]/30">View Work</a>
-                  <a href="#contact" style={{ backgroundColor: theme.cardBg, color: theme.mainText, borderColor: theme.cardBorder }} className="border font-bold px-8 py-3.5 rounded-full transition hover:opacity-80">Let's Talk</a>
+                  <a href="#projects" className="bg-[#10b981] text-white font-bold px-8 py-3.5 rounded-full hover:bg-emerald-600 transition shadow-lg shadow-[#10b981]/30">
+                    View Work
+                  </a>
+                  <a 
+                    href="#contact" 
+                    style={{ backgroundColor: theme.cardBg, color: theme.mainText, borderColor: theme.cardBorder }} 
+                    className="border font-bold px-8 py-3.5 rounded-full transition hover:opacity-80"
+                  >
+                    Let's Talk
+                  </a>
                 </div>
               </div>
               <div className="flex-1 flex justify-center lg:justify-end">
-                <div style={{ backgroundColor: darkMode ? '#0f172a' : '#e2e8f0' }} className="w-72 h-96 relative p-2 shadow-2xl rounded-[2rem] transition-colors">
-                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover grayscale border rounded-[1.5rem]" style={{ borderColor: theme.cardBorder }} />
-                  <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="absolute -bottom-4 -left-4 p-3 shadow-lg border flex items-center gap-2 rounded-xl transition-colors">
+                <div 
+                  style={{ backgroundColor: darkMode ? '#0f172a' : '#e2e8f0' }} 
+                  className="w-72 h-96 relative p-2 shadow-2xl rounded-[2rem] transition-colors"
+                >
+                  <img 
+                    src={profile.avatar} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover grayscale border rounded-[1.5rem]" 
+                    style={{ borderColor: theme.cardBorder }} 
+                  />
+                  <div 
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
+                    className="absolute -bottom-4 -left-4 p-3 shadow-lg border flex items-center gap-2 rounded-xl transition-colors"
+                  >
                     <div className="w-2 h-2 bg-[#10b981] rounded-full animate-pulse"></div>
-                    <span style={{ color: theme.mainText }} className="text-xs font-bold font-mono transition-colors">AVAILABLE FOR WORK</span>
+                    <span 
+                      style={{ color: theme.mainText }} 
+                      className="text-xs font-bold font-mono transition-colors"
+                    >
+                      AVAILABLE FOR WORK
+                    </span>
                   </div>
                 </div>
               </div>
             </section>
 
+            {/* NEW: ABOUT SECTION DENGAN EFEK TYPEWRITER */}
+            <section 
+              id="about" 
+              className="py-32 px-6 sm:px-12 max-w-5xl mx-auto text-center flex items-center justify-center min-h-[50vh] border-t" 
+              style={{ borderColor: theme.cardBorder }}
+            >
+              <TextType
+                // Mengambil kalimat dari Admin Panel, dipisahkan berdasarkan baris baru (Enter)
+                text={
+                  profile.aboutTexts 
+                    ? profile.aboutTexts.split('\n').filter(t => t.trim() !== '') 
+                    : [
+                        "I build fullstack web systems", 
+                        "with clean user interfaces", 
+                        "and database-driven workflows"
+                      ]
+                }
+                typingSpeed={75}
+                pauseDuration={1500}
+                showCursor={true}
+                cursorCharacter="_"
+                deletingSpeed={50}
+                className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight"
+                style={{ color: theme.mainText }}
+              />
+            </section>
+
             {/* GITHUB STATS OTOMATIS */}
-            <section className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t relative overflow-hidden" style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}>
-              
+            <section 
+              className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t relative overflow-hidden" 
+              style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}
+            >
               <div className="absolute top-16 left-0 w-full overflow-hidden flex justify-center pointer-events-none select-none z-0">
-                <span className="text-[8rem] md:text-[14rem] font-black tracking-tighter whitespace-nowrap transition-colors" style={{ color: theme.mainText, opacity: darkMode ? 0.03 : 0.04 }}>
+                <span 
+                  className="text-[8rem] md:text-[14rem] font-black tracking-tighter whitespace-nowrap transition-colors" 
+                  style={{ color: theme.mainText, opacity: darkMode ? 0.03 : 0.04 }}
+                >
                   CONTRIBUTIONS
                 </span>
               </div>
-
               <div className="relative z-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
                   <div>
@@ -303,10 +421,11 @@ export default function MainPortfolio() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  
-                  {/* Kolom Kiri: Kartu Statistik Otomatis */}
                   <div className="lg:col-span-4 flex flex-col gap-6">
-                    <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-8 flex-1 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
+                    <div 
+                      style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
+                      className="border rounded-[2rem] p-8 flex-1 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md"
+                    >
                       <p style={{ color: theme.mutedText }} className="text-xs font-bold tracking-widest uppercase mb-4">Total Public Repos</p>
                       <h3 style={{ color: theme.mainText }} className="text-6xl md:text-7xl font-black mb-2 tracking-tighter">
                         {githubStats.isLoaded ? githubStats.repos : <Loader2 className="animate-spin text-[#10b981]" />}
@@ -315,13 +434,19 @@ export default function MainPortfolio() {
                     </div>
                     
                     <div className="grid grid-cols-2 gap-6">
-                      <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
+                      <div 
+                        style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
+                        className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md"
+                      >
                         <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Followers</p>
                         <h4 style={{ color: theme.mainText }} className="text-2xl font-black">
                            {githubStats.isLoaded ? githubStats.followers : '-'}
                         </h4>
                       </div>
-                      <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md">
+                      <div 
+                        style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
+                        className="border rounded-[2rem] p-6 flex flex-col justify-center shadow-sm transition-colors hover:shadow-md"
+                      >
                         <p style={{ color: theme.mutedText }} className="text-[10px] font-bold tracking-widest uppercase mb-2">Following</p>
                         <h4 style={{ color: theme.mainText }} className="text-2xl font-black">
                            {githubStats.isLoaded ? githubStats.following : '-'}
@@ -330,18 +455,23 @@ export default function MainPortfolio() {
                     </div>
                   </div>
 
-                  {/* Kolom Kanan: Chart Graph Visual */}
-                  <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="lg:col-span-8 border rounded-[2rem] p-8 shadow-sm flex flex-col justify-between transition-colors hover:shadow-md">
+                  <div 
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
+                    className="lg:col-span-8 border rounded-[2rem] p-8 shadow-sm flex flex-col justify-between transition-colors hover:shadow-md"
+                  >
                     <div className="overflow-x-auto pb-6 hide-scrollbar flex items-center justify-center flex-1">
                       <img 
                         src={`https://ghchart.rshah.org/10b981/${githubUsername}`} 
                         alt="GitHub Chart" 
-                        className="min-w-[600px] w-full"
+                        className="min-w-[600px] w-full" 
                         style={{ opacity: darkMode ? 0.9 : 1 }} 
                       />
                     </div>
                     
-                    <div className="mt-4 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center transition-colors" style={{ borderColor: theme.cardBorder }}>
+                    <div 
+                      className="mt-4 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center transition-colors" 
+                      style={{ borderColor: theme.cardBorder }}
+                    >
                       <span style={{ color: theme.mutedText }} className="text-sm font-mono font-medium">@{githubUsername}</span>
                       <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.mutedText }}>
                         <span>Less</span>
@@ -354,20 +484,23 @@ export default function MainPortfolio() {
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </section>
 
             {/* PROJECTS PREVIEW */}
-            <section id="projects" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" style={{ backgroundColor: theme.sectionBg, borderColor: theme.cardBorder, transition: 'background-color 0.3s ease' }}>
+            <section 
+              id="projects" 
+              className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" 
+              style={{ backgroundColor: theme.sectionBg, borderColor: theme.cardBorder, transition: 'background-color 0.3s ease' }}
+            >
               <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                   <h2 style={{ color: theme.mainText }} className="text-4xl font-black mb-4 tracking-tight transition-colors">Latest Projects</h2>
                   <p style={{ color: theme.mutedText }} className="font-medium transition-colors">A glimpse of what I've been working on recently.</p>
                 </div>
                 <button 
-                  onClick={() => window.location.hash = '#projects-all'}
+                  onClick={() => window.location.hash = '#projects-all'} 
                   className="bg-[#10b981] text-white font-bold px-6 py-3 rounded-full hover:bg-emerald-600 transition shadow-lg shadow-[#10b981]/30 whitespace-nowrap"
                 >
                   Lihat Semua Project
@@ -382,13 +515,21 @@ export default function MainPortfolio() {
             </section>
 
             {/* ACHIEVEMENTS */}
-            <section id="achievements" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" style={{ borderColor: theme.cardBorder }}>
+            <section 
+              id="achievements" 
+              className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" 
+              style={{ borderColor: theme.cardBorder }}
+            >
               <div className="mb-16">
                 <h2 style={{ color: theme.mainText }} className="text-4xl font-black mb-4 tracking-tight transition-colors">Experiences & Awards</h2>
               </div>
               <div className="space-y-6">
                 {achievements.map((ach) => (
-                  <div key={ach.id} style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border p-8 rounded-[2rem] flex flex-col md:flex-row md:items-start gap-8 hover:border-[#10b981] transition-colors shadow-sm">
+                  <div 
+                    key={ach.id} 
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} 
+                    className="border p-8 rounded-[2rem] flex flex-col md:flex-row md:items-start gap-8 hover:border-[#10b981] transition-colors shadow-sm"
+                  >
                     <div style={{ color: theme.mutedText }} className="font-mono text-xl font-bold shrink-0 w-24 pt-1 transition-colors">{ach.year}</div>
                     <div>
                       <h3 style={{ color: theme.mainText }} className="text-2xl font-black mb-2 transition-colors">{ach.title}</h3>
@@ -399,19 +540,22 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* GALLERY SECTION DENGAN EFEK SCROLL VELOCITY */}
-            <section id="gallery" className="py-24 border-t overflow-hidden" style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}>
+            {/* GALLERY SECTION */}
+            <section 
+              id="gallery" 
+              className="py-24 border-t overflow-hidden" 
+              style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}
+            >
               <div className="mb-16">
-                <ScrollVelocity
-                  texts={['PHOTO GALLERY', 'MEMORIES & MOMENTS']}
-                  velocity={50}
-                  className="text-[#10b981] font-black tracking-tighter"
-                  numCopies={6}
-                  damping={50}
-                  stiffness={400}
+                <ScrollVelocity 
+                  texts={['PHOTO GALLERY', 'MEMORIES & MOMENTS']} 
+                  velocity={50} 
+                  className="text-[#10b981] font-black tracking-tighter" 
+                  numCopies={6} 
+                  damping={50} 
+                  stiffness={400} 
                 />
               </div>
-
               <div className="px-6 sm:px-12 max-w-7xl mx-auto">
                 {gallery.length === 0 ? (
                   <p style={{ color: theme.mutedText }} className="text-center italic">Belum ada foto di galeri.</p>
@@ -420,11 +564,11 @@ export default function MainPortfolio() {
                     {gallery.map((gal) => (
                       <motion.div 
                         key={gal.id} 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        whileHover={{ scale: 1.02 }}
-                        className="break-inside-avoid rounded-[2rem] overflow-hidden shadow-md border"
+                        initial={{ opacity: 0, y: 20 }} 
+                        whileInView={{ opacity: 1, y: 0 }} 
+                        viewport={{ once: true }} 
+                        whileHover={{ scale: 1.02 }} 
+                        className="break-inside-avoid rounded-[2rem] overflow-hidden shadow-md border" 
                         style={{ borderColor: theme.cardBorder, backgroundColor: theme.cardBg }}
                       >
                         <img src={gal.url} alt={gal.caption || 'Gallery Image'} className="w-full h-auto object-cover" />
@@ -440,31 +584,23 @@ export default function MainPortfolio() {
               </div>
             </section>
 
+            {/* CONTACT SECTION */}
             <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
               <div className="max-w-7xl mx-auto px-6 z-20 relative">
                 <div className="text-center mb-16">
-                  <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">
-                    Let's Work <span className="text-[#10b981]">Together</span>
-                  </h2>
-                  <p className="text-slate-400 text-lg max-w-xl mx-auto">
-                    Reach out via email or drag the ID card below to connect!
-                  </p>
+                  <h2 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">Let's Work <span className="text-[#10b981]">Together</span></h2>
+                  <p className="text-slate-400 text-lg max-w-xl mx-auto">Reach out via email or drag the ID card below to connect!</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
                   <div className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center bg-[#1e293b]/50 rounded-[2rem] border border-white/5 shadow-inner">
                     <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
-                    <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">
-                      &lt; Drag ID Card /&gt;
-                    </p>
+                    <p className="absolute bottom-6 text-slate-500 font-mono text-xs tracking-widest uppercase">&lt; Drag ID Card /&gt;</p>
                   </div>
 
                   <div className="bg-[#1e293b]/30 p-8 md:p-10 rounded-[2rem] border border-white/5 flex flex-col h-[550px] justify-between shadow-2xl">
                     <div>
-                      <h3 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
-                        <Send className="text-[#10b981]" /> Hubungi Saya
-                      </h3>
-                      
+                      <h3 className="text-2xl font-bold mb-6 text-white flex items-center gap-3"><Send className="text-[#10b981]" /> Hubungi Saya</h3>
                       <form onSubmit={handleSendMessage} className="space-y-5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <div>
@@ -480,10 +616,7 @@ export default function MainPortfolio() {
                           <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Pesan</label>
                           <textarea rows="4" placeholder="Tuliskan pesan Anda..." className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all resize-none" required></textarea>
                         </div>
-                        
-                        <button type="submit" className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all w-full mt-2">
-                          Kirim Pesan Sekarang
-                        </button>
+                        <button type="submit" className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all w-full mt-2">Kirim Pesan Sekarang</button>
                       </form>
                     </div>
 
@@ -498,32 +631,26 @@ export default function MainPortfolio() {
           </motion.div>
         )}
 
-
         {/* ======================================================== */}
         {/* VIEW 2: HALAMAN SEMUA PROJECT */}
         {/* ======================================================== */}
         {activeView === 'all-projects' && (
           <motion.div key="all-projects" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pt-32 pb-24 px-6 sm:px-12 max-w-7xl mx-auto min-h-screen">
             <button 
-              onClick={() => window.location.hash = '#about'}
+              onClick={() => window.location.hash = '#home'} 
               className="flex items-center gap-2 font-bold mb-10 text-[#10b981] hover:text-emerald-600 transition-colors"
             >
               <ArrowLeft size={20} /> Kembali ke Home
             </button>
-            
             <div className="mb-16">
               <h2 style={{ color: theme.mainText }} className="text-4xl font-black mb-4 tracking-tight transition-colors">All Projects</h2>
               <p style={{ color: theme.mutedText }} className="font-medium transition-colors">A comprehensive list of everything I've built, created, and shipped.</p>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              {projects.map((proj) => (
-                <ProjectCard key={proj.id} proj={proj} />
-              ))}
+              {projects.map((proj) => <ProjectCard key={proj.id} proj={proj} />)}
             </div>
           </motion.div>
         )}
-
 
         {/* ======================================================== */}
         {/* VIEW 3: HALAMAN DETAIL PROJECT */}
@@ -531,13 +658,12 @@ export default function MainPortfolio() {
         {activeView === 'detail' && selectedProject && (
           <motion.div key="detail" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="pt-32 pb-24 px-6 sm:px-12 max-w-4xl mx-auto min-h-screen">
             <button 
-              onClick={() => window.history.back()}
+              onClick={() => window.history.back()} 
               className="flex items-center gap-2 font-bold mb-10 text-[#10b981] hover:text-emerald-600 transition-colors"
             >
               <ArrowLeft size={20} /> Kembali
             </button>
-
-            {/* Slider Jika Gambar Lebih Dari Satu */}
+            
             <div style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }} className="border p-2 rounded-3xl shadow-xl mb-12 relative group overflow-hidden">
                {selectedProject.images && selectedProject.images.length > 1 ? (
                  <div className="w-full h-64 md:h-[450px] flex overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-2xl bg-slate-100 dark:bg-slate-800">
@@ -557,16 +683,18 @@ export default function MainPortfolio() {
               <h1 style={{ color: theme.mainText }} className="text-4xl md:text-6xl font-black mb-8 tracking-tight transition-colors">
                 {selectedProject.title}
               </h1>
-              
               <div style={{ color: theme.mutedText }} className="text-lg leading-relaxed whitespace-pre-wrap mb-10 transition-colors">
                 {selectedProject.desc}
               </div>
-
               <div>
                 <h3 style={{ color: theme.mainText }} className="text-lg font-bold mb-4 uppercase tracking-widest transition-colors">Technologies Used</h3>
                 <div className="flex flex-wrap gap-3">
                   {(selectedProject.tech || "").split(',').map((tech, idx) => (
-                    <span key={idx} style={{ backgroundColor: theme.cardBg, color: theme.mainText, borderColor: theme.cardBorder }} className="font-mono font-bold px-4 py-2 rounded-lg border shadow-sm transition-colors text-sm">
+                    <span 
+                      key={idx} 
+                      style={{ backgroundColor: theme.cardBg, color: theme.mainText, borderColor: theme.cardBorder }} 
+                      className="font-mono font-bold px-4 py-2 rounded-lg border shadow-sm transition-colors text-sm"
+                    >
                       {tech.trim()}
                     </span>
                   ))}
