@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
 import TextType from '../components/TextType'; 
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -221,9 +221,25 @@ export default function MainPortfolio() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#fcfcfc' }} className="min-h-screen flex flex-col items-center justify-center transition-colors duration-300">
-        <Terminal size={48} className="text-[#10b981] mb-4 animate-pulse" />
-        <p className="font-mono text-sm tracking-widest text-[#10b981] uppercase">Memuat Portfolio...</p>
+      <div style={{ backgroundColor: darkMode ? '#0f172a' : '#fcfcfc' }} className="min-h-screen flex flex-col items-center justify-center transition-colors duration-300">
+        <div className="flex flex-col items-center justify-center">
+          <div className="flex items-center text-[#10b981] font-mono text-5xl md:text-6xl mb-5 font-light tracking-tighter">
+            <span>&gt;</span>
+            <motion.span 
+              animate={{ opacity: [1, 0, 1] }} 
+              transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+            >
+              _
+            </motion.span>
+          </div>
+          <motion.p 
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            className="font-mono text-xs sm:text-sm tracking-[0.3em] text-[#10b981] uppercase font-medium ml-2"
+          >
+            MEMUAT PORTFOLIO...
+          </motion.p>
+        </div>
       </div>
     );
   }
