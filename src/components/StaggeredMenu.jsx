@@ -19,10 +19,13 @@ export const StaggeredMenu = ({
   darkMode = false, 
   toggleTheme, 
   onMenuOpen,
-  onMenuClose
+  onMenuClose,
+  isOpenProp // <-- PROPERTI BARU UNTUK KENDALI DARI LUAR
 }) => {
-  const [open, setOpen] = useState(false);
-  const openRef = useRef(false);
+  // Singkronkan state internal dengan properti dari luar
+  const [open, setOpen] = useState(isOpenProp || false);
+  const openRef = useRef(isOpenProp || false);
+  
   const panelRef = useRef(null);
   const preLayersRef = useRef(null);
   const preLayerElsRef = useRef([]);
@@ -31,7 +34,7 @@ export const StaggeredMenu = ({
   const iconRef = useRef(null);
   const textInnerRef = useRef(null);
   const textWrapRef = useRef(null);
-  const [textLines, setTextLines] = useState(['Menu', 'Close']);
+  const [textLines, setTextLines] = useState(isOpenProp ? ['Close', 'Menu'] : ['Menu', 'Close']);
 
   const openTlRef = useRef(null);
   const closeTweenRef = useRef(null);
@@ -41,6 +44,23 @@ export const StaggeredMenu = ({
   const toggleBtnRef = useRef(null);
   const busyRef = useRef(false);
   const itemEntranceTweenRef = useRef(null);
+
+  // Efek untuk memaksa menu terbuka/tertutup jika state di parent berubah
+  useEffect(() => {
+    if (isOpenProp !== undefined && isOpenProp !== openRef.current) {
+      const target = isOpenProp;
+      openRef.current = target;
+      setOpen(target);
+      if (target) {
+        playOpen();
+      } else {
+        playClose();
+      }
+      animateIcon(target);
+      animateColor(target);
+      animateText(target);
+    }
+  }, [isOpenProp]);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -59,19 +79,28 @@ export const StaggeredMenu = ({
       preLayerElsRef.current = preLayers;
 
       const offscreen = position === 'left' ? -100 : 100;
-      gsap.set([panel, ...preLayers], { xPercent: offscreen, opacity: 1 });
-      if (preContainer) {
-        gsap.set(preContainer, { xPercent: 0, opacity: 1 });
-      }
-      gsap.set(plusH, { transformOrigin: '50% 50%', rotate: 0 });
-      gsap.set(plusV, { transformOrigin: '50% 50%', rotate: 90 });
-      gsap.set(icon, { rotate: 0, transformOrigin: '50% 50%' });
-      gsap.set(textInner, { yPercent: 0 });
       
-      if (toggleBtnRef.current) gsap.set(toggleBtnRef.current, { color: menuButtonColor });
+      // Setup awal berdasarkan state
+      if (!openRef.current) {
+        gsap.set([panel, ...preLayers], { xPercent: offscreen, opacity: 1 });
+        if (preContainer) gsap.set(preContainer, { xPercent: 0, opacity: 1 });
+        gsap.set(plusH, { transformOrigin: '50% 50%', rotate: 0 });
+        gsap.set(plusV, { transformOrigin: '50% 50%', rotate: 90 });
+        gsap.set(icon, { rotate: 0, transformOrigin: '50% 50%' });
+        gsap.set(textInner, { yPercent: 0 });
+      } else {
+        gsap.set([panel, ...preLayers], { xPercent: 0, opacity: 1 });
+        gsap.set(plusH, { rotate: 225 });
+        gsap.set(plusV, { rotate: 225 });
+        gsap.set(icon, { rotate: 225 });
+      }
+      
+      if (toggleBtnRef.current) {
+        gsap.set(toggleBtnRef.current, { color: openRef.current ? openMenuButtonColor : menuButtonColor });
+      }
     });
     return () => ctx.revert();
-  }, [position]); // <-- PERBAIKAN: menuButtonColor dihapus dari sini agar GSAP tidak error saat ganti tema
+  }, [position]);
 
   const buildOpenTimeline = useCallback(() => {
     const panel = panelRef.current;
@@ -270,7 +299,7 @@ export const StaggeredMenu = ({
       const targetColor = openRef.current && changeMenuColorOnOpen ? openMenuButtonColor : menuButtonColor;
       gsap.to(toggleBtnRef.current, { color: targetColor, duration: 0.3 });
     }
-  }, [changeMenuColorOnOpen, menuButtonColor, openMenuButtonColor, darkMode, open]);
+  }, [changeMenuColorOnOpen, menuButtonColor, openMenuButtonColor, darkMode]);
 
   const animateText = useCallback(opening => {
     const inner = textInnerRef.current;
@@ -348,6 +377,11 @@ export const StaggeredMenu = ({
     };
   }, [closeOnClickAway, open, closeMenu]);
 
+  // LOGIKA WARNA MENU BERKEBALIKAN DENGAN TEMA
+  const menuBgColor = darkMode ? '#ffffff' : '#0f172a';
+  const menuTextColor = darkMode ? '#0f172a' : '#f8fafc';
+  const menuBorderColor = darkMode ? '#e2e8f0' : '#1e293b';
+
   return (
     <div
       className={(className ? className + ' ' : '') + 'staggered-menu-wrapper' + (isFixed ? ' fixed-wrapper' : '')}
@@ -358,16 +392,16 @@ export const StaggeredMenu = ({
       
       <style>{`
         .staggered-menu-panel {
-          background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
-          border-left: 1px solid ${darkMode ? '#1e293b' : '#f1f5f9'} !important;
+          background-color: ${menuBgColor} !important;
+          border-left: 1px solid ${menuBorderColor} !important;
           transition: background-color 0.3s ease, border-color 0.3s ease !important;
         }
         .sm-panel-inner {
-          background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
+          background-color: ${menuBgColor} !important;
           transition: background-color 0.3s ease !important;
         }
         .sm-panel-item {
-          color: ${darkMode ? '#f8fafc' : '#0f172a'} !important;
+          color: ${menuTextColor} !important;
           transition: color 0.3s ease !important;
         }
         .sm-panel-item:hover {
@@ -377,7 +411,7 @@ export const StaggeredMenu = ({
           color: ${accentColor} !important;
         }
         .sm-socials-link {
-          color: ${darkMode ? '#94a3b8' : '#64748b'} !important;
+          color: ${darkMode ? '#64748b' : '#94a3b8'} !important;
           transition: color 0.3s ease !important;
         }
         .sm-socials-link:hover {
@@ -391,8 +425,7 @@ export const StaggeredMenu = ({
 
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
-          const activeColors = colors && colors.length ? colors : (darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']);
-          const raw = activeColors.slice(0, 4);
+          const raw = colors.slice(0, 4);
           let arr = [...raw];
           if (arr.length >= 3) {
             const mid = Math.floor(arr.length / 2);
@@ -496,11 +529,10 @@ export const StaggeredMenu = ({
               </div>
             )}
             
-            {/* AREA BAWAH MENU (ADMIN MODE & TOMBOL THEME TOGGLE) */}
             <div style={{ 
               marginTop: '2rem', 
               paddingTop: '1.5rem',
-              borderTop: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)', 
+              borderTop: `1px solid ${menuBorderColor}50`, // opacity 50%
               transition: 'border-color 0.3s ease',
               display: 'flex',
               justifyContent: 'space-between',
@@ -531,7 +563,7 @@ export const StaggeredMenu = ({
                 Admin Mode
               </a>
 
-              {/* TOMBOL THEME TOGGLE DARI DALAM MENU */}
+              {/* TOMBOL THEME TOGGLE (TETAP DIAM DI MENU MESKIPUN DIKLIK) */}
               <button 
                 onClick={(e) => {
                   e.preventDefault();
@@ -547,11 +579,12 @@ export const StaggeredMenu = ({
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
+                  backgroundColor: darkMode ? '#f1f5f9' : '#1e293b', // Warna bundaran kebalikan
                   color: '#10b981',
-                  border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`,
+                  border: `1px solid ${darkMode ? '#e2e8f0' : '#334155'}`,
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  zIndex: 99
                 }}
                 onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
