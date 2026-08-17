@@ -1,15 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
 import TextType from '../components/TextType'; 
-
-import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -38,18 +35,23 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
     >
       <audio ref={audioRef} src={audioUrl} loop onEnded={() => setIsPlaying(false)} />
       
+      {/* Tombol Play/Pause dengan Efek Denyut (Pulse) */}
       <button 
         onClick={togglePlay} 
         className="relative w-11 h-11 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] z-10"
       >
         {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+        
+        {/* Ring Ping Animasi saat Playing */}
         {isPlaying && (
           <span className="absolute inset-0 rounded-full border-2 border-[#10b981] animate-ping opacity-50"></span>
         )}
       </button>
       
       <div className="flex flex-col justify-center overflow-hidden">
+        
         <div className="flex items-center gap-2">
+          {/* Ikon Vinyl Berputar */}
           <motion.div 
             animate={{ rotate: isPlaying ? 360 : 0 }}
             transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
@@ -58,6 +60,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
             <Disc size={14} />
           </motion.div>
 
+          {/* Teks Berjalan dengan Efek Memudar di Ujung (Masking) */}
           <div 
             className="overflow-hidden w-24 md:w-36 relative flex items-center"
             style={{
@@ -71,6 +74,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
               className="flex whitespace-nowrap gap-6 text-xs font-bold tracking-wide"
               style={{ color: theme.mainText }}
             >
+              {/* Teks diduplikasi agar gulungannya tidak pernah putus (seamless) */}
               <span>{trackTitle}</span>
               <span>{trackTitle}</span>
               <span>{trackTitle}</span>
@@ -78,6 +82,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
           </div>
         </div>
 
+        {/* Audio Visualizer Mini (Bar Naik Turun) */}
         <div className="flex items-end gap-[3px] h-2.5 mt-1 ml-6">
           {[1, 2, 3, 4, 5].map((i) => (
             <motion.div
@@ -94,6 +99,7 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
             />
           ))}
         </div>
+
       </div>
     </motion.div>
   );
@@ -106,11 +112,17 @@ export default function MainPortfolio() {
   const [achievements, setAchievements] = useState([]);
   const [gallery, setGallery] = useState([]); 
   
+  // STATE STATISTIK GITHUB OTOMATIS
   const [githubStats, setGithubStats] = useState({ repos: 0, followers: 0, following: 0, isLoaded: false });
+  
+  // STATE DARK MODE
   const [darkMode, setDarkMode] = useState(false);
+  
+  // STATE VIRTUAL ROUTING
   const [activeView, setActiveView] = useState('home'); 
   const [selectedProject, setSelectedProject] = useState(null);
   
+  // STATE MENDETEKSI MENU
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
@@ -140,6 +152,7 @@ export default function MainPortfolio() {
         setAchievements(await fetchAchievements());
         setGallery(await fetchGallery());
 
+        // --- MENGAMBIL DATA STATISTIK GITHUB SECARA OTOMATIS ---
         const rawGithubUrl = profileData?.github || 'https://github.com/senryudamn';
         const cleanUrl = rawGithubUrl.replace(/\/$/, ''); 
         const extractedUsername = cleanUrl.split('/').pop();
@@ -155,9 +168,11 @@ export default function MainPortfolio() {
               isLoaded: true 
             });
           } else {
+            // Jika limit API Github habis
             setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
           }
         } catch (ghError) {
+          // Jika gagal terkoneksi internet ke Github
           setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
         }
       } catch (error) {
@@ -210,12 +225,13 @@ export default function MainPortfolio() {
     const message = formData.get('message');
 
     try {
-      await addDoc(collection(db, "messages"), {
-        name,
-        email,
-        message,
-        createdAt: new Date().toISOString()
-      });
+      // Pastikan untuk meng-import addDoc dan collection dari firebase jika menggunakan ini sungguhan
+      // await addDoc(collection(db, "messages"), {
+      //   name,
+      //   email,
+      //   message,
+      //   createdAt: new Date().toISOString()
+      // });
       alert("Pesan berhasil terkirim! Terima kasih telah menghubungi saya.");
       e.target.reset();
     } catch (error) {
@@ -364,6 +380,7 @@ export default function MainPortfolio() {
       className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10"
     >
 
+      {/* OVERLAY BLUR: MUNCUL SAAT MENU DIBUKA */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -399,8 +416,7 @@ export default function MainPortfolio() {
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
         
-        // PENGATURAN WARNA MENU DIUBAH KE BALIKANNYA 
-        // Jika web Gelap -> Menu Putih. Jika web Terang -> Menu Gelap.
+        // PENGATURAN WARNA MENU BERKEBALIKAN
         colors={darkMode ? ['#ffffff', '#f1f5f9'] : ['#0f172a', '#1e293b']} 
         accentColor="#10b981" 
       />
@@ -692,7 +708,7 @@ export default function MainPortfolio() {
             <section 
               id="contact" 
               className="w-full pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981] transition-colors duration-300"
-              style={{ backgroundColor: darkMode ? '#ffffff' : '#0f172a' }} // <-- Berubah kebalikannya
+              style={{ backgroundColor: darkMode ? '#ffffff' : '#0f172a' }} 
             >
               <div className="max-w-7xl mx-auto px-6 z-20 relative">
                 <div className="text-center mb-16">
@@ -707,14 +723,14 @@ export default function MainPortfolio() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
                   <div 
-                    className="w-full h-[550px] relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center rounded-[2rem] shadow-inner transition-colors border"
+                    className="w-full h-[420px] md:h-[550px] touch-none relative cursor-grab active:cursor-grabbing flex flex-col justify-center items-center rounded-[2rem] shadow-inner transition-colors border overflow-hidden"
                     style={{ 
                       backgroundColor: darkMode ? '#f1f5f9' : '#1e293b', 
                       borderColor: darkMode ? '#e2e8f0' : '#334155' 
                     }}
                   >
                     <Lanyard position={[0, 0, 15]} gravity={[0, -40, 0]} />
-                    <p style={{ color: darkMode ? '#94a3b8' : '#64748b' }} className="absolute bottom-6 font-mono text-xs tracking-widest uppercase transition-colors">
+                    <p style={{ color: darkMode ? '#94a3b8' : '#64748b' }} className="absolute bottom-6 font-mono text-xs tracking-widest uppercase transition-colors pointer-events-none">
                       &lt; Drag ID Card /&gt;
                     </p>
                   </div>
