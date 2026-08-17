@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, Save, Plus, Trash2, Loader2, Music, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, LogOut, Upload, User, Briefcase, Award, Image as ImageIcon, Save, Plus, Trash2, Loader2, Music, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -72,11 +72,14 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
 
-  // MENGUBAH STATE: Menambahkan aboutTexts
   const [profile, setProfile] = useState({ name: '', role: '', bio: '', email: '', linkedin: '', github: '', avatar: '', audioUrl: '', audioTitle: '', aboutTexts: '' });
   const [projects, setProjects] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [gallery, setGallery] = useState([]);
+  
+  // STATE BARU: MENGAMBIL PESAN MASUK
+  const [messages, setMessages] = useState([]);
+  
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
@@ -105,6 +108,12 @@ export default function AdminPanel() {
 
       const galSnap = await getDocs(collection(db, "gallery"));
       setGallery(galSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      // FETCH MESSAGES BARU & URUTKAN DARI YANG TERBARU KE TERLAMA
+      const msgSnap = await getDocs(collection(db, "messages"));
+      const msgs = msgSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMessages(msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+
     } catch (error) {
       toast.error("Gagal menarik data. Pastikan Firestore sudah aktif!");
       console.error(error);
@@ -359,6 +368,19 @@ export default function AdminPanel() {
     }
   };
 
+  // FUNGSI HAPUS PESAN MASUK
+  const handleDeleteMessage = async (id) => {
+    if (window.confirm("Hapus pesan ini secara permanen?")) {
+      try {
+        await deleteDoc(doc(db, "messages", id));
+        setMessages(messages.filter(m => m.id !== id));
+        toast.success("Pesan dihapus.");
+      } catch (error) {
+        toast.error("Gagal menghapus pesan.");
+      }
+    }
+  };
+
   if (isAuthLoading) {
     return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="animate-spin text-[#10b981]" size={48} /></div>;
   }
@@ -402,6 +424,11 @@ export default function AdminPanel() {
           </button>
           <button onClick={() => setActiveTab('gallery')} className={`flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition-colors whitespace-nowrap ${activeTab === 'gallery' ? 'bg-[#10b981] text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
             <ImageIcon size={18} /> Galeri Foto
+          </button>
+          {/* TAB PESAN MASUK BARU */}
+          <button onClick={() => setActiveTab('messages')} className={`flex items-center justify-between px-4 py-3 rounded-lg w-full text-left transition-colors whitespace-nowrap ${activeTab === 'messages' ? 'bg-[#10b981] text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+            <div className="flex items-center gap-3"><Mail size={18} /> Pesan Masuk</div>
+            {messages.length > 0 && <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{messages.length}</span>}
           </button>
         </nav>
         <div className="p-4 border-t border-slate-800">
@@ -457,7 +484,6 @@ export default function AdminPanel() {
                   <textarea rows="4" value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 focus:border-[#10b981] focus:ring-1 outline-none"></textarea>
                 </div>
 
-                {/* PENAMBAHAN KOTAK UNTUK TEXT ANIMASI ABOUT */}
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Teks Animasi About (Pisahkan kalimat dengan Enter)</label>
                   <textarea 
@@ -610,6 +636,50 @@ export default function AdminPanel() {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {/* TAB PESAN MASUK (INBOX) */}
+          {activeTab === 'messages' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-black text-slate-800">Pesan Masuk</h2>
+              </div>
+
+              {messages.length === 0 ? (
+                <div className="bg-white p-10 rounded-2xl border border-slate-200 text-center shadow-sm">
+                  <Mail className="mx-auto text-slate-300 mb-4" size={48} />
+                  <p className="text-slate-500 font-medium">Belum ada pesan masuk di kotak masuk Anda.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6 relative items-start hover:border-[#10b981] transition-colors">
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+                          <div>
+                            <h3 className="font-bold text-lg text-slate-800">{msg.name}</h3>
+                            <a href={`mailto:${msg.email}`} className="text-sm font-medium text-[#10b981] hover:underline">{msg.email}</a>
+                          </div>
+                          <span className="text-xs font-mono font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full self-start">
+                            {new Date(msg.createdAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed text-sm">
+                          {msg.message}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteMessage(msg.id)} 
+                        className="bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600 p-3 rounded-lg transition-colors shrink-0 w-full md:w-auto flex justify-center mt-4 md:mt-0"
+                        title="Hapus Pesan"
+                      >
+                        <Trash2 size={20}/>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 

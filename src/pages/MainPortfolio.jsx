@@ -8,6 +8,10 @@ import StaggeredMenu from '../components/StaggeredMenu';
 import ScrollVelocity from '../components/ScrollVelocity'; 
 import TextType from '../components/TextType'; 
 
+// IMPORT FIREBASE UNTUK KIRIM PESAN
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
+
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -35,23 +39,18 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
     >
       <audio ref={audioRef} src={audioUrl} loop onEnded={() => setIsPlaying(false)} />
       
-      {/* Tombol Play/Pause dengan Efek Denyut (Pulse) */}
       <button 
         onClick={togglePlay} 
         className="relative w-11 h-11 shrink-0 bg-[#10b981] rounded-full flex items-center justify-center text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] z-10"
       >
         {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
-        
-        {/* Ring Ping Animasi saat Playing */}
         {isPlaying && (
           <span className="absolute inset-0 rounded-full border-2 border-[#10b981] animate-ping opacity-50"></span>
         )}
       </button>
       
       <div className="flex flex-col justify-center overflow-hidden">
-        
         <div className="flex items-center gap-2">
-          {/* Ikon Vinyl Berputar */}
           <motion.div 
             animate={{ rotate: isPlaying ? 360 : 0 }}
             transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
@@ -60,7 +59,6 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
             <Disc size={14} />
           </motion.div>
 
-          {/* Teks Berjalan dengan Efek Memudar di Ujung (Masking) */}
           <div 
             className="overflow-hidden w-24 md:w-36 relative flex items-center"
             style={{
@@ -74,7 +72,6 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
               className="flex whitespace-nowrap gap-6 text-xs font-bold tracking-wide"
               style={{ color: theme.mainText }}
             >
-              {/* Teks diduplikasi agar gulungannya tidak pernah putus (seamless) */}
               <span>{trackTitle}</span>
               <span>{trackTitle}</span>
               <span>{trackTitle}</span>
@@ -82,7 +79,6 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
           </div>
         </div>
 
-        {/* Audio Visualizer Mini (Bar Naik Turun) */}
         <div className="flex items-end gap-[3px] h-2.5 mt-1 ml-6">
           {[1, 2, 3, 4, 5].map((i) => (
             <motion.div
@@ -99,7 +95,6 @@ const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
             />
           ))}
         </div>
-
       </div>
     </motion.div>
   );
@@ -116,9 +111,9 @@ export default function MainPortfolio() {
   const [darkMode, setDarkMode] = useState(false);
   const [activeView, setActiveView] = useState('home'); 
   const [selectedProject, setSelectedProject] = useState(null);
-
-  // STATE BARU: MENDETEKSI MENU TERBUKA ATAU TERTUTUP UNTUK EFEK BLUR
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false); // STATE KIRIM PESAN
 
   useEffect(() => {
     const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -206,10 +201,31 @@ export default function MainPortfolio() {
     window.location.hash = `#project-detail-${proj.id || proj.tempId}`;
   };
 
-  const handleSendMessage = (e) => {
+  // LOGIKA KIRIM PESAN KE FIREBASE
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    alert("Pesan terkirim!");
-    e.target.reset();
+    setIsSendingMessage(true);
+    
+    const formData = new FormData(e.target);
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const message = formData.get('message');
+
+    try {
+      await addDoc(collection(db, "messages"), {
+        name,
+        email,
+        message,
+        createdAt: new Date().toISOString()
+      });
+      alert("Pesan berhasil terkirim! Terima kasih telah menghubungi saya.");
+      e.target.reset();
+    } catch (error) {
+      console.error("Error sending message: ", error);
+      alert("Gagal mengirim pesan. Silakan coba lagi nanti.");
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
   if (loading) {
@@ -351,7 +367,6 @@ export default function MainPortfolio() {
       className="min-h-screen font-sans selection:bg-[#10b981] selection:text-white relative pb-10"
     >
 
-      {/* OVERLAY BLUR: MUNCUL SAAT MENU DIBUKA */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -362,7 +377,6 @@ export default function MainPortfolio() {
           />
         )}
       </AnimatePresence>
-      {/* -------------------------------------- */}
 
       <FloatingMusicPlayer 
         audioUrl={profile.audioUrl} 
@@ -379,9 +393,9 @@ export default function MainPortfolio() {
         displayItemNumbering={true}
         isFixed={true}
         darkMode={darkMode} 
-        toggleTheme={() => setDarkMode(!darkMode)} // Fungsi dark mode diteruskan ke menu
-        onMenuOpen={() => setIsMenuOpen(true)}     // Trigger blur menyala
-        onMenuClose={() => setIsMenuOpen(false)}   // Trigger blur mati
+        toggleTheme={() => setDarkMode(!darkMode)}
+        onMenuOpen={() => setIsMenuOpen(true)} 
+        onMenuClose={() => setIsMenuOpen(false)} 
         menuButtonColor={darkMode ? "#10b981" : "#0f172a"} 
         openMenuButtonColor="#10b981"
         changeMenuColorOnOpen={true}
@@ -391,9 +405,6 @@ export default function MainPortfolio() {
 
       <AnimatePresence mode="wait">
         
-        {/* ======================================================== */}
-        {/* VIEW 1: HALAMAN UTAMA (HOME) */}
-        {/* ======================================================== */}
         {activeView === 'home' && (
           <motion.div 
             key="home" 
@@ -403,7 +414,6 @@ export default function MainPortfolio() {
             transition={{ duration: 0.3 }}
           >
             
-            {/* HERO SECTION */}
             <section id="home" className="pt-40 pb-20 px-6 sm:px-12 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
               <div className="flex-1 space-y-6">
                 <p 
@@ -472,7 +482,6 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* SEKSI ABOUT DENGAN EFEK TYPEWRITER */}
             <section 
               id="about" 
               className="py-32 px-6 sm:px-12 max-w-5xl mx-auto text-center flex items-center justify-center min-h-[50vh] border-t" 
@@ -493,7 +502,6 @@ export default function MainPortfolio() {
               />
             </section>
 
-            {/* GITHUB STATS OTOMATIS */}
             <section 
               className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t relative overflow-hidden" 
               style={{ borderColor: theme.cardBorder, backgroundColor: theme.mainBg, transition: 'background-color 0.3s ease' }}
@@ -585,7 +593,6 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* PROJECTS PREVIEW */}
             <section 
               id="projects" 
               className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" 
@@ -611,7 +618,6 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* ACHIEVEMENTS */}
             <section 
               id="achievements" 
               className="py-24 px-6 sm:px-12 max-w-7xl mx-auto border-t" 
@@ -637,7 +643,6 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* GALLERY SECTION */}
             <section 
               id="gallery" 
               className="py-24 border-t overflow-hidden" 
@@ -681,7 +686,6 @@ export default function MainPortfolio() {
               </div>
             </section>
 
-            {/* CONTACT SECTION */}
             <section id="contact" className="w-full bg-[#0f172a] text-white pt-24 pb-32 relative overflow-hidden border-t-8 border-[#10b981]">
               <div className="max-w-7xl mx-auto px-6 z-20 relative">
                 <div className="text-center mb-16">
@@ -702,18 +706,20 @@ export default function MainPortfolio() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <div>
                             <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Nama</label>
-                            <input type="text" placeholder="Nama Anda" className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all" required />
+                            <input type="text" name="name" placeholder="Nama Anda" className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all" required />
                           </div>
                           <div>
                             <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Email</label>
-                            <input type="email" placeholder="Email Anda" className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all" required />
+                            <input type="email" name="email" placeholder="Email Anda" className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all" required />
                           </div>
                         </div>
                         <div>
                           <label className="block text-sm font-bold text-slate-400 mb-2 pl-1">Pesan</label>
-                          <textarea rows="4" placeholder="Tuliskan pesan Anda..." className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all resize-none" required></textarea>
+                          <textarea rows="4" name="message" placeholder="Tuliskan pesan Anda..." className="w-full bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981] transition-all resize-none" required></textarea>
                         </div>
-                        <button type="submit" className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all w-full mt-2">Kirim Pesan Sekarang</button>
+                        <button type="submit" disabled={isSendingMessage} className="bg-[#10b981] text-[#0f172a] font-black text-lg px-8 py-4 rounded-xl hover:bg-emerald-400 transition-all w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {isSendingMessage ? <Loader2 className="animate-spin inline-block mx-auto" /> : 'Kirim Pesan Sekarang'}
+                        </button>
                       </form>
                     </div>
 
