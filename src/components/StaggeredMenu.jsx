@@ -16,7 +16,8 @@ export const StaggeredMenu = ({
   changeMenuColorOnOpen = true,
   isFixed = false,
   closeOnClickAway = true,
-  darkMode = false, // <-- TRIGGER MODE GELAP DARI MAIN PORTFOLIO
+  darkMode = false, 
+  toggleTheme, // <-- Prop baru untuk mengontrol mode gelap/terang dari dalam menu
   onMenuOpen,
   onMenuClose
 }) => {
@@ -264,7 +265,6 @@ export const StaggeredMenu = ({
     [openMenuButtonColor, menuButtonColor, changeMenuColorOnOpen]
   );
 
-  // EFEK INI MEMASTIKAN WARNA TOMBOL MENU BERUBAH SECARA INSTAN SAAT DARK MODE DIKLIK
   useEffect(() => {
     if (toggleBtnRef.current) {
       const targetColor = openRef.current && changeMenuColorOnOpen ? openMenuButtonColor : menuButtonColor;
@@ -356,8 +356,6 @@ export const StaggeredMenu = ({
       data-open={open || undefined}
     >
       
-      {/* 1. SUNTIKAN CSS DINAMIS UNTUK DARK MODE */}
-      {/* Kode ini memaksa seluruh panel dan teks di dalamnya berubah seketika mengikuti mode terang/gelap */}
       <style>{`
         .staggered-menu-panel {
           background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
@@ -387,7 +385,6 @@ export const StaggeredMenu = ({
         }
       `}</style>
 
-      {/* 2. LAYER ANIMASI TRANISI WARNA (Mengikuti tema Gelap/Terang) */}
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
           const activeColors = colors && colors.length ? colors : (darkMode ? ['#1e293b', '#334155'] : ['#f1f5f9', '#e2e8f0']);
@@ -401,7 +398,6 @@ export const StaggeredMenu = ({
         })()}
       </div>
 
-      {/* 3. HEADER FIXED DENGAN KACA BURAM & WARNA TEKS DINAMIS */}
       <header 
         className="staggered-menu-header" 
         aria-label="Main navigation header"
@@ -425,7 +421,6 @@ export const StaggeredMenu = ({
       >
         <div className="sm-logo" aria-label="Logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
-          {/* Ini adalah baris yang hilang di kode lama Anda, membuat teks logo menyesuaikan warna saat mode gelap */}
           <span style={{ 
             fontSize: '1.25rem', 
             fontWeight: '900', 
@@ -455,14 +450,12 @@ export const StaggeredMenu = ({
             </span>
           </span>
           <span ref={iconRef} className="sm-icon" aria-hidden="true">
-            {/* Ikon hamburger GSAP akan otomatis menyerap warna tombol berdasarkan state */}
             <span ref={plusHRef} className="sm-icon-line" style={{ backgroundColor: 'currentColor' }}/>
             <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" style={{ backgroundColor: 'currentColor' }}/>
           </span>
         </button>
       </header>
 
-      {/* 4. STRUKTUR MENU SAMPING */}
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
         <div className="sm-panel-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
@@ -499,11 +492,15 @@ export const StaggeredMenu = ({
               </div>
             )}
             
+            {/* AREA BAWAH MENU (ADMIN MODE & TOMBOL THEME TOGGLE) */}
             <div style={{ 
               marginTop: '2rem', 
               paddingTop: '1.5rem',
               borderTop: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)', 
-              transition: 'border-color 0.3s ease'
+              transition: 'border-color 0.3s ease',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
               <a 
                 href="/admin" 
@@ -529,6 +526,38 @@ export const StaggeredMenu = ({
                 </svg>
                 Admin Mode
               </a>
+
+              {/* TOMBOL THEME TOGGLE DARI DALAM MENU */}
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (toggleTheme) toggleTheme();
+                }}
+                aria-label="Toggle Dark Mode"
+                title="Toggle Dark Mode"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
+                  color: '#10b981',
+                  border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                {darkMode ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                )}
+              </button>
             </div>
             
           </div>

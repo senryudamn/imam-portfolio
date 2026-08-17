@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 import { fetchProfile, fetchProjects, fetchAchievements, fetchGallery } from '../data'; 
 import Lanyard from '../components/Lanyard'; 
 import FoldText from '../components/FoldText';
 import StaggeredMenu from '../components/StaggeredMenu'; 
 import ScrollVelocity from '../components/ScrollVelocity'; 
 import TextType from '../components/TextType'; 
-import { Terminal, ArrowUpRight, Send, Play, Pause, Sun, Moon, ArrowLeft, Loader2, Disc } from 'lucide-react';
 
 // --- KOMPONEN PEMUTAR MUSIK MELAYANG (PREMIUM REDESIGN) ---
 const FloatingMusicPlayer = ({ audioUrl, title, darkMode, theme }) => {
@@ -176,7 +176,8 @@ export default function MainPortfolio() {
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
-        setTimeout(() => setLoading(false), 800);
+        // Waktu diperpanjang sedikit ke 1200ms agar efek ngetik terminal sempat selesai
+        setTimeout(() => setLoading(false), 1200);
       }
     };
     loadData();
@@ -219,42 +220,73 @@ export default function MainPortfolio() {
     e.target.reset();
   };
 
+  // ========================================================
+  // ANIMASI LOADING BARU (EFEK TERMINAL MENGETIK)
+  // ========================================================
   if (loading) {
+    const loadingText = "MEMUAT PORTFOLIO...";
     return (
       <div style={{ backgroundColor: darkMode ? '#0f172a' : '#fcfcfc' }} className="min-h-screen flex flex-col items-center justify-center transition-colors duration-300">
         <div className="flex flex-col items-center justify-center">
-          <div className="flex items-center text-[#10b981] font-mono text-5xl md:text-6xl mb-5 font-light tracking-tighter">
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex items-center text-[#10b981] font-mono text-5xl md:text-6xl mb-6 font-light tracking-tighter"
+          >
             <span>&gt;</span>
             <motion.span 
               animate={{ opacity: [1, 0, 1] }} 
-              transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+              transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
             >
               _
             </motion.span>
+          </motion.div>
+          
+          <div className="flex items-center ml-2">
+            {loadingText.split('').map((char, index) => (
+              <motion.span
+                key={index}
+                initial={{ opacity: 0, display: 'none' }}
+                animate={{ opacity: 1, display: 'inline-block' }}
+                transition={{ delay: index * 0.03, duration: 0.1 }}
+                className="font-mono text-xs sm:text-sm tracking-[0.3em] text-[#10b981] uppercase font-bold"
+              >
+                {char === " " ? "\u00A0" : char}
+              </motion.span>
+            ))}
           </div>
-          <motion.p 
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            className="font-mono text-xs sm:text-sm tracking-[0.3em] text-[#10b981] uppercase font-medium ml-2"
+
+          <motion.div 
+            className="w-32 h-[2px] bg-[#10b981]/10 mt-6 relative overflow-hidden rounded-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
           >
-            MEMUAT PORTFOLIO...
-          </motion.p>
+            <motion.div 
+              className="absolute top-0 left-0 h-full bg-[#10b981]"
+              initial={{ left: "-100%", width: "100%" }}
+              animate={{ left: "100%" }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </motion.div>
+
         </div>
       </div>
     );
   }
+  // ========================================================
 
-  // Gunakan logika pembersihan yang sama untuk username di bagian Chart
   const rawGithubUrl = profile?.github || 'https://github.com/senryudamn';
   const githubUsername = rawGithubUrl.replace(/\/$/, '').split('/').pop();
   
   const firstName = profile?.name ? profile.name.split(' ')[0] : 'imam';
   const role = profile?.role || 'IoT & Automation';
 
-  // MENU ITEMS DIPERBARUI DENGAN LINK ABOUT
   const menuItems = [
     { label: 'Home', ariaLabel: 'Go to home page', link: '#home' },
-    { label: 'About', ariaLabel: 'About me', link: '#about' }, // <-- Link About ditambahkan
+    { label: 'About', ariaLabel: 'About me', link: '#about' }, 
     { label: 'Projects', ariaLabel: 'View our projects', link: '#projects-all' },
     { label: 'Experience', ariaLabel: 'View my experience', link: '#achievements' },
     { label: 'Gallery', ariaLabel: 'View photo gallery', link: '#gallery' }, 
@@ -276,7 +308,6 @@ export default function MainPortfolio() {
     sectionBg: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)'
   };
 
-  // --- KOMPONEN KARTU PROJECT ---
   const ProjectCard = ({ proj }) => (
     <motion.div 
       onClick={() => openProjectDetail(proj)}
