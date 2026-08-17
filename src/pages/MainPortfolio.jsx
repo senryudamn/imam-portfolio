@@ -83,23 +83,36 @@ export default function MainPortfolio() {
     const loadData = async () => {
       try {
         const profileData = await fetchProfile();
-        setProfile(profileData);
+        setProfile(profileData || {});
         setProjects(await fetchProjects());
         setAchievements(await fetchAchievements());
         setGallery(await fetchGallery());
 
-        // MENGAMBIL DATA STATISTIK GITHUB SECARA OTOMATIS
-        if (profileData?.github) {
-          const username = profileData.github.split('/').pop();
-          const ghRes = await fetch(`https://api.github.com/users/${username}`);
-          const ghData = await ghRes.json();
-          setGithubStats({
-            repos: ghData.public_repos || 0,
-            followers: ghData.followers || 0,
-            following: ghData.following || 0,
-            isLoaded: true
-          });
+        // --- PERBAIKAN LOGIKA GITHUB STATS ---
+        const rawGithubUrl = profileData?.github || 'https://github.com/senryudamn';
+        const cleanUrl = rawGithubUrl.replace(/\/$/, ''); // Menghapus slash di akhir URL jika ada
+        const extractedUsername = cleanUrl.split('/').pop();
+
+        try {
+          const ghRes = await fetch(`https://api.github.com/users/${extractedUsername}`);
+          if (ghRes.ok) {
+            const ghData = await ghRes.json();
+            setGithubStats({
+              repos: ghData.public_repos || 0,
+              followers: ghData.followers || 0,
+              following: ghData.following || 0,
+              isLoaded: true // Matikan loading
+            });
+          } else {
+            // Jika limit API Github habis
+            setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
+          }
+        } catch (ghError) {
+          // Jika gagal terkoneksi internet ke Github
+          setGithubStats({ repos: '-', followers: '-', following: '-', isLoaded: true });
         }
+        // -------------------------------------
+
       } catch (error) {
         console.error("Gagal memuat data", error);
       } finally {
@@ -151,9 +164,12 @@ export default function MainPortfolio() {
     );
   }
 
-  const githubUsername = profile.github ? profile.github.split('/').pop() : 'senryudamn';
-  const firstName = profile.name ? profile.name.split(' ')[0] : 'imam';
-  const role = profile.role || 'IoT & Automation';
+  // Gunakan logika pembersihan yang sama untuk username di bagian Chart
+  const rawGithubUrl = profile?.github || 'https://github.com/senryudamn';
+  const githubUsername = rawGithubUrl.replace(/\/$/, '').split('/').pop();
+  
+  const firstName = profile?.name ? profile.name.split(' ')[0] : 'imam';
+  const role = profile?.role || 'IoT & Automation';
 
   const menuItems = [
     { label: 'Home', ariaLabel: 'Go to home page', link: '#about' },
